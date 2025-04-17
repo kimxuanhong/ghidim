@@ -72,18 +72,38 @@ function renderGamesList() {
 // Show player names modal
 function showPlayerNamesModal() {
     playerNamesModal.style.display = 'block';
+    resetNameInputs();
+    validatePlayerNames(); // Validate initially to disable button
     playerNameInputs[0].focus();
 }
 
 // Hide player names modal
 function hidePlayerNamesModal() {
     playerNamesModal.style.display = 'none';
-    playerNameInputs.forEach(input => input.value = '');
+    resetNameInputs();
+}
+
+// Reset name inputs
+function resetNameInputs() {
+    playerNameInputs.forEach(input => {
+        input.value = '';
+    });
+}
+
+// Validate player names
+function validatePlayerNames() {
+    const allFilled = playerNameInputs.every(input => input.value.trim() !== '');
+    startGameBtn.disabled = !allFilled;
+    startGameBtn.classList.toggle('disabled', !allFilled);
 }
 
 // Create new game
 function createNewGame() {
-    const playerNames = playerNameInputs.map(input => input.value.trim() || input.placeholder);
+    if (!playerNameInputs.every(input => input.value.trim())) {
+        return; // Don't create if not all names are filled
+    }
+
+    const playerNames = playerNameInputs.map(input => input.value.trim());
     
     const newGame = {
         id: Date.now(),
@@ -113,6 +133,11 @@ function openGame(index) {
 newGameBtn.addEventListener('click', showPlayerNamesModal);
 startGameBtn.addEventListener('click', createNewGame);
 cancelNewGameBtn.addEventListener('click', hidePlayerNamesModal);
+
+// Add input event listeners for validation
+playerNameInputs.forEach(input => {
+    input.addEventListener('input', validatePlayerNames);
+});
 
 // Close modal when clicking outside
 window.addEventListener('click', (e) => {
