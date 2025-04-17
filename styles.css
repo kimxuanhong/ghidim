@@ -137,10 +137,12 @@ tfoot td {
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
 }
 
-/* Small button variant */
-.small-btn {
+/* Small button variant (only for scoring page) */
+.score-section .small-btn {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
 }
@@ -384,4 +386,24 @@ button:disabled {
 .selected-input {
     background-color: #e8f0fe !important;
     border-color: #1a73e8 !important;
+}
+
+/* Home page new game button */
+#newGameBtn {
+    display: block;
+    margin: 1rem auto;
+}
+
+/* Success button style */
+.success-btn,
+#startGameBtn,
+#confirmScore {
+    background-color: #28a745;
+    color: white;
+}
+
+.success-btn:hover,
+#startGameBtn:hover,
+#confirmScore:hover {
+    background-color: #218838;
 } 
