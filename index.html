@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Ván Bài</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Lịch Sử Ván Bài</h1>
+        
+        <!-- Danh sách ván bài -->
+        <div class="game-history">
+            <div id="noGamesMessage" class="no-games">
+                Chưa có ván bài nào được ghi nhận
+            </div>
+            <div id="gamesList" class="games-list">
+                <!-- Games will be listed here -->
+            </div>
+        </div>
+
+        <!-- Nút tạo ván mới -->
+        <button id="newGameBtn" class="primary-btn">Tạo Ván Mới</button>
+
+        <!-- Modal nhập tên người chơi -->
+        <div id="playerNamesModal" class="modal">
+            <div class="modal-content">
+                <h2>Nhập Tên Người Chơi</h2>
+                <div class="player-name-inputs">
+                    <div class="input-group">
+                        <label for="playerName1">Người chơi 1:</label>
+                        <input type="text" id="playerName1" placeholder="Nhập tên">
+                    </div>
+                    <div class="input-group">
+                        <label for="playerName2">Người chơi 2:</label>
+                        <input type="text" id="playerName2" placeholder="Nhập tên">
+                    </div>
+                    <div class="input-group">
+                        <label for="playerName3">Người chơi 3:</label>
+                        <input type="text" id="playerName3" placeholder="Nhập tên">
+                    </div>
+                    <div class="input-group">
+                        <label for="playerName4">Người chơi 4:</label>
+                        <input type="text" id="playerName4" placeholder="Nhập tên">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="startGameBtn" class="confirm-btn">Bắt Đầu</button>
+                    <button id="cancelNewGame" class="cancel-btn">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

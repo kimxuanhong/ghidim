@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghi Điểm Ván Bài</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ghi Điểm Ván Bài</h1>
+            <a href="index.html" class="back-btn">← Trở về</a>
+        </div>
+
+        <div class="score-section">
+            <div class="table-header">
+                <button id="endGameBtn" class="danger-btn small-btn">Kết thúc ván</button>
+            </div>
+            
+            <div class="score-table-container">
+                <table id="scoreTable">
+                    <thead>
+                        <tr>
+                            <th>Vòng</th>
+                            <th id="player1Header">Người chơi 1</th>
+                            <th id="player2Header">Người chơi 2</th>
+                            <th id="player3Header">Người chơi 3</th>
+                            <th id="player4Header">Người chơi 4</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scoreTableBody">
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Tổng điểm</td>
+                            <td id="total1">0</td>
+                            <td id="total2">0</td>
+                            <td id="total3">0</td>
+                            <td id="total4">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="action-buttons">
+                <button id="addScoreBtn" class="primary-btn small-btn">Thêm điểm mới</button>
+            </div>
+        </div>
+
+        <!-- Modal form để nhập điểm -->
+        <div id="scoreModal" class="modal">
+            <div class="modal-content">
+                <div class="player-inputs">
+                    <div class="input-group">
+                        <label id="label1" for="score1">Người chơi 1:</label>
+                        <input type="number" id="score1" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label id="label2" for="score2">Người chơi 2:</label>
+                        <input type="number" id="score2" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label id="label3" for="score3">Người chơi 3:</label>
+                        <input type="number" id="score3" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label id="label4" for="score4">Người chơi 4:</label>
+                        <input type="number" id="score4" readonly>
+                    </div>
+                </div>
+                <div class="number-pad">
+                    <button class="num-btn">1</button>
+                    <button class="num-btn">2</button>
+                    <button class="num-btn">3</button>
+                    <button class="num-btn">4</button>
+                    <button class="num-btn">5</button>
+                    <button class="num-btn">6</button>
+                    <button class="num-btn">7</button>
+                    <button class="num-btn">8</button>
+                    <button class="num-btn">9</button>
+                    <button class="num-btn">0</button>
+                    <button class="clear-btn">C</button>
+                    <button class="backspace-btn">←</button>
+                </div>
+                <div class="modal-buttons">
+                    <button id="confirmScore" class="confirm-btn">Xác nhận</button>
+                    <button id="cancelEdit" class="cancel-btn" style="display: none;">Hủy sửa</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal xác nhận kết thúc ván -->
+        <div id="endGameModal" class="modal">
+            <div class="modal-content">
+                <h2>Xác nhận kết thúc</h2>
+                <p class="modal-message">Bạn có chắc chắn muốn kết thúc ván bài này? Sau khi kết thúc sẽ không thể chỉnh sửa điểm.</p>
+                <div class="modal-buttons">
+                    <button id="confirmEndGame" class="danger-btn">Kết thúc</button>
+                    <button id="cancelEndGame" class="secondary-btn">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="scoring.js"></script>
+</body>
+</html> 
