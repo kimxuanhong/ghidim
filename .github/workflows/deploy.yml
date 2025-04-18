@@ -21,6 +21,6 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .             # Gốc project chứa index.html
-          branch: gh-pages      # Nhánh để deploy
+          branch: master      # Nhánh để deploy
           clean: true
           token: ${{ secrets.GITHUB_TOKEN }}
