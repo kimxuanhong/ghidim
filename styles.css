@@ -13,6 +13,7 @@ body {
     max-width: 1000px;
     margin: 2rem auto;
     padding: 0 1rem;
+    padding-bottom: 80px;
 }
 
 h1, h2 {
@@ -412,4 +413,23 @@ button:disabled {
     .player-inputs {
         grid-template-columns: repeat(2,47%);
     }
+}
+
+/* Fixed Action Button */
+.fixed-action-buttons {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 100;
+    padding: 10px;
+}
+
+.fixed-action-buttons button {
+    padding: 12px 24px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    font-size: 1rem;
+    min-width: 180px;
 }

@@ -63,21 +63,30 @@ function saveCurrentGame() {
     localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
     
     // Update in games list
-    const games = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY));
+    const games = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY)) || [];
     const gameIndex = games.findIndex(g => g.id === currentGame.id);
+    
     if (gameIndex !== -1) {
-        games[gameIndex] = currentGame;
-        localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
+        // Remove the game from its current position
+        games.splice(gameIndex, 1);
     }
+    
+    // Add the updated game to the beginning of the array
+    games.unshift(currentGame);
+    
+    // Update the stored games
+    localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
 }
 
 // Render scores table
 function renderScores() {
     scoreTable.innerHTML = '';
+    
+    // Display rounds with newest (index 0) at the top
     currentGame.rounds.forEach((round, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${index + 1}</td>
+            <td>${currentGame.rounds.length - index}</td>
             ${round.map(score => `<td>${score}</td>`).join('')}
         `;
         if (!currentGame.isEnded) {
@@ -276,7 +285,8 @@ function saveRoundScores() {
     if (editingRow !== null) {
         currentGame.rounds[editingRow] = roundScores;
     } else {
-        currentGame.rounds.push(roundScores);
+        // Add new round to the beginning of the array
+        currentGame.rounds.unshift(roundScores);
     }
     
     saveCurrentGame();

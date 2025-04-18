@@ -28,6 +28,10 @@ const playerNameInputs = Array.from({ length: 4 }, (_, i) => document.getElement
 function loadGames() {
     const savedGames = localStorage.getItem(GAMES_STORAGE_KEY);
     games = savedGames ? JSON.parse(savedGames) : [];
+    
+    // Sort games by date (newest first)
+    games.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
     renderGamesList();
 }
 
