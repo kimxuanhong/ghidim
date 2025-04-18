@@ -18,6 +18,9 @@
     <!-- Firebase Configuration (this file should NOT be committed to version control) -->
     <script src="firebase-config.js"></script>
     <script src="firebase.js"></script>
+    
+    <!-- Firebase Config Checker -->
+    <script src="check-firebase-config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -71,6 +74,23 @@
                 <div class="modal-buttons">
                     <button id="startGameBtn" class="confirm-btn">Bắt Đầu</button>
                     <button id="cancelNewGame" class="cancel-btn">Hủy</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Firebase Configuration Error Modal -->
+        <div id="configErrorModal" class="modal">
+            <div class="modal-content">
+                <h2>Lỗi Cấu Hình Firebase</h2>
+                <p>Ứng dụng không thể kết nối với Firebase. Có thể do các lý do sau:</p>
+                <ol>
+                    <li>File <code>firebase-config.js</code> không tồn tại hoặc không đúng định dạng</li>
+                    <li>Thông tin cấu hình Firebase không chính xác</li>
+                    <li>Kết nối mạng bị gián đoạn</li>
+                </ol>
+                <p>Vui lòng kiểm tra console để biết thêm chi tiết.</p>
+                <div class="modal-buttons">
+                    <button onclick="document.getElementById('configErrorModal').style.display='none';" class="primary-btn">Đã hiểu</button>
                 </div>
             </div>
         </div>
