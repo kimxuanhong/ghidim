@@ -34,20 +34,104 @@ const clearBtn = document.querySelector('.clear-btn');
 const backspaceBtn = document.querySelector('.backspace-btn');
 const confettiContainer = document.getElementById('confettiContainer');
 
-// Load current game from localStorage
-function loadCurrentGame() {
+// Listen for real-time updates to the current game
+function listenForCurrentGame(gameId) {
+    if (!gameId) return null;
+    
+    const gameRef = db.ref(`rooms/${currentRoom}/games/${gameId}`);
+    gameRef.on('value', (snapshot) => {
+        // Skip if snapshot doesn't exist
+        if (!snapshot || !snapshot.exists()) return;
+        
+        const updatedGame = snapshot.val();
+        // Skip if data is null or invalid
+        if (!updatedGame) return;
+        
+        updatedGame.firebaseId = snapshot.key;
+        
+        // Ensure required properties exist
+        if (!updatedGame.rounds) {
+            updatedGame.rounds = [];
+        }
+        
+        if (!updatedGame.totalScores) {
+            updatedGame.totalScores = [0, 0, 0, 0];
+        }
+        
+        // Only update if it's not from our own save
+        if (JSON.stringify(currentGame) !== JSON.stringify(updatedGame)) {
+            currentGame = updatedGame;
+            updatePlayerNames();
+            renderScores();
+            
+            if (currentGame.isEnded) {
+                setGameEndedState();
+            }
+        }
+    }, (error) => {
+        console.error("Error listening for game updates:", error);
+    });
+    
+    return gameRef;
+}
+
+// Load current game from localStorage and set up real-time listener
+async function loadCurrentGame() {
     const savedGame = localStorage.getItem(CURRENT_GAME_KEY);
     if (!savedGame) {
         window.location.href = 'index.html';
         return;
     }
     currentGame = JSON.parse(savedGame);
+    
+    // Ensure required properties exist
+    if (!currentGame.rounds) {
+        currentGame.rounds = [];
+    }
+    
+    if (!currentGame.totalScores) {
+        currentGame.totalScores = [0, 0, 0, 0];
+    }
+    
+    // Update room setting from game
+    if (currentGame.room) {
+        setCurrentRoom(currentGame.room);
+    } 
+    
+    // Add room display
+    updateRoomDisplay();
+    
     updatePlayerNames();
     renderScores();
     
     if (currentGame.isEnded) {
         setGameEndedState();
     }
+    
+    // Set up real-time listener if game has a firebaseId
+    if (currentGame.firebaseId) {
+        listenForCurrentGame(currentGame.firebaseId);
+    }
+}
+
+// Update room display
+function updateRoomDisplay() {
+    // Create room badge
+    const header = document.querySelector('.header');
+    if (!header) return;
+    
+    const roomDisplay = document.createElement('div');
+    roomDisplay.className = 'room-badge';
+    roomDisplay.textContent = `Phòng: ${currentRoom}`;
+    
+    // Remove existing badge if any
+    const existingBadge = header.querySelector('.room-badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    // Add to header
+    header.appendChild(roomDisplay);
 }
 
 // Update player names in the UI
@@ -58,8 +142,9 @@ function updatePlayerNames() {
     });
 }
 
-// Save current game to localStorage
-function saveCurrentGame() {
+// Save current game to localStorage and Firebase
+async function saveCurrentGame() {
+    // Save to localStorage
     localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
     
     // Update in games list
@@ -76,18 +161,34 @@ function saveCurrentGame() {
     
     // Update the stored games
     localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
+    
+    // Save to Firebase
+    try {
+        await updateGameInFirebase(currentGame);
+    } catch (error) {
+        console.error("Error saving game to Firebase:", error);
+    }
 }
 
 // Render scores table
 function renderScores() {
     scoreTable.innerHTML = '';
     
+    // Ensure rounds array exists
+    if (!currentGame.rounds) {
+        currentGame.rounds = [];
+        return; // Exit if no rounds to display
+    }
+    
     // Display rounds with newest (index 0) at the top
     currentGame.rounds.forEach((round, index) => {
+        // Skip undefined or null rounds
+        if (!round) return;
+        
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${currentGame.rounds.length - index}</td>
-            ${round.map(score => `<td>${score}</td>`).join('')}
+            ${round.map(score => `<td>${score !== undefined ? score : 0}</td>`).join('')}
         `;
         if (!currentGame.isEnded) {
             row.addEventListener('click', () => editRow(index));
@@ -99,9 +200,27 @@ function renderScores() {
 
 // Update total scores
 function updateTotals() {
+    // Ensure rounds array exists
+    if (!currentGame.rounds) {
+        currentGame.rounds = [];
+        currentGame.totalScores = [0, 0, 0, 0];
+        
+        // Update UI with zeros
+        currentGame.totalScores.forEach((total, index) => {
+            document.getElementById(`total${index + 1}`).textContent = total;
+        });
+        return;
+    }
+    
     currentGame.totalScores = currentGame.rounds.reduce((totals, round) => {
+        // Skip undefined rounds
+        if (!round) return totals;
+        
+        // Process each score in the round
         round.forEach((score, index) => {
-            totals[index] += score;
+            // Ensure score is a number
+            const numericScore = parseInt(score) || 0;
+            totals[index] += numericScore;
         });
         return totals;
     }, [0, 0, 0, 0]);
@@ -143,10 +262,10 @@ function setGameEndedState() {
 }
 
 // End game
-function endGame() {
+async function endGame() {
     currentGame.isEnded = true;
     currentGame.endDate = new Date().toISOString();
-    saveCurrentGame();
+    await saveCurrentGame();
     setGameEndedState();
     hideEndGameModal();
     
@@ -277,7 +396,7 @@ function editRow(index) {
 }
 
 // Save scores
-function saveRoundScores() {
+async function saveRoundScores() {
     if (confirmBtn.disabled) return;
 
     const roundScores = scoreInputs.map(input => parseInt(input.value) || 0);
@@ -289,7 +408,7 @@ function saveRoundScores() {
         currentGame.rounds.unshift(roundScores);
     }
     
-    saveCurrentGame();
+    await saveCurrentGame();
     renderScores();
     hideModal();
 }

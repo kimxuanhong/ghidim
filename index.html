@@ -10,10 +10,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Configuration (this file should NOT be committed to version control) -->
+    <script src="firebase-config.js"></script>
+    <script src="firebase.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>Lịch Sử Ván Bài</h1>
+        
+        <!-- Room selection -->
+        <div class="room-selector">
+            <input type="text" id="roomInput" placeholder="Nhập mã phòng">
+            <button id="joinRoomBtn" class="primary-btn">Vào phòng</button>
+        </div>
         
         <!-- Danh sách ván bài -->
         <div class="game-history">
@@ -32,6 +46,10 @@
         <div id="playerNamesModal" class="modal">
             <div class="modal-content">
                 <h2>Nhập Tên Người Chơi</h2>
+                <div class="room-input-group">
+                    <label for="gameRoom">Mã phòng:</label>
+                    <input type="text" id="gameRoom" placeholder="Nhập mã phòng hoặc để trống">
+                </div>
                 <div class="player-name-inputs">
                     <div class="input-group">
                         <label for="playerName1">Người chơi 1:</label>
