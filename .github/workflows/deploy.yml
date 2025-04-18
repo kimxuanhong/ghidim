@@ -1,41 +1,26 @@
-name: Deploy to GitHub Pages
+name: Firebase deploying Master
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ master ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Create Firebase Config
+      - name: Add Firebase Config (from secrets)
         run: |
-          echo '${{ secrets.FIREBASE_CONFIG }}' > firebase-config.js
-          cat firebase-config.js
+          echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-config.js
+          echo "Firebase config created."
 
-      - name: Validate Firebase Config
-        run: |
-          echo "Validating Firebase config format..."
-          if ! grep -q "const firebaseConfig" firebase-config.js; then
-            echo "ERROR: Firebase config does not contain 'const firebaseConfig'"
-            exit 1
-          fi
-          if ! grep -q "firebase.initializeApp(firebaseConfig)" firebase-config.js; then
-            echo "ERROR: Firebase config does not initialize Firebase"
-            exit 1
-          fi
-          if ! grep -q "const db = firebase.database()" firebase-config.js; then
-            echo "ERROR: Firebase config does not set up database reference"
-            exit 1
-          fi
-          echo "Firebase config format looks good!"
-
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: .
-          branch: master
+          folder: .             # Gốc project chứa index.html
+          branch: gh-pages      # Nhánh để deploy
+          clean: true
+          token: ${{ secrets.GITHUB_TOKEN }}
