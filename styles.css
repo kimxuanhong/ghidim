@@ -212,7 +212,7 @@ button:disabled {
     padding: 2rem;
     border-radius: 8px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
 }
 
 .player-name-inputs {
@@ -407,3 +407,9 @@ button:disabled {
 #confirmScore:hover {
     background-color: #218838;
 } 
+
+@media screen and (max-width: 600px) {
+    .player-inputs {
+        grid-template-columns: repeat(2,47%);
+    }
+}
