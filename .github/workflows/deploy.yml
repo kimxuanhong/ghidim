@@ -1,4 +1,4 @@
-name: Firebase deploying
+name: Firebase deploying Master
 
 on:
   push:
