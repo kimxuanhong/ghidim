@@ -23,6 +23,7 @@ const playerLabels = Array.from({ length: 4 }, (_, i) => document.getElementById
 const numButtons = document.querySelectorAll('.num-btn');
 const clearBtn = document.querySelector('.clear-btn');
 const backspaceBtn = document.querySelector('.backspace-btn');
+const confettiContainer = document.getElementById('confettiContainer');
 
 // Load current game from localStorage
 function loadCurrentGame() {
@@ -131,6 +132,68 @@ function endGame() {
     saveCurrentGame();
     setGameEndedState();
     hideEndGameModal();
+    
+    // Find and celebrate the winner
+    celebrateWinner();
+}
+
+// Celebrate the winner with confetti effect
+function celebrateWinner() {
+    const winnerIndex = findWinnerIndex();
+    if (winnerIndex === -1) return;
+    
+    // Highlight winner's total
+    const winnerTotal = document.getElementById(`total${winnerIndex + 1}`);
+    winnerTotal.classList.add('winner-highlight');
+    
+    // Create confetti
+    confettiContainer.style.display = 'block';
+    createConfetti();
+    
+    // Show winner message
+    const winnerName = currentGame.players[winnerIndex];
+    alert(`🎉 Chúc mừng ${winnerName} đã chiến thắng với ${currentGame.totalScores[winnerIndex]} điểm! 🏆`);
+}
+
+// Find the index of the player with the highest score
+function findWinnerIndex() {
+    if (!currentGame.totalScores || currentGame.totalScores.length === 0) return -1;
+    
+    let highestScore = Math.max(...currentGame.totalScores);
+    return currentGame.totalScores.indexOf(highestScore);
+}
+
+// Create confetti elements
+function createConfetti() {
+    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+    
+    // Clear any existing confetti
+    confettiContainer.innerHTML = '';
+    
+    // Create 100 confetti pieces
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Random position, color, size and delay
+        const left = Math.random() * 100;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 10 + 5;
+        const delay = Math.random() * 3;
+        
+        confetti.style.left = `${left}%`;
+        confetti.style.backgroundColor = color;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.animationDelay = `${delay}s`;
+        
+        confettiContainer.appendChild(confetti);
+    }
+    
+    // Remove confetti after animation completes
+    setTimeout(() => {
+        confettiContainer.style.display = 'none';
+    }, 8000);
 }
 
 // Reset input fields
