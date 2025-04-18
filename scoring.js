@@ -158,10 +158,13 @@ function handleNumberClick(number) {
     }
 }
 
-// Handle clear button
+// Handle clear button (now +/- button)
 function handleClear() {
     if (selectedInput) {
-        selectedInput.value = '';
+        if (selectedInput.value) {
+            // Toggle between positive and negative
+            selectedInput.value = String(-parseFloat(selectedInput.value || '0'));
+        }
         validateInputs();
     }
 }
