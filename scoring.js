@@ -23,7 +23,7 @@ const endGameModal = document.getElementById('endGameModal');
 const addScoreBtn = document.getElementById('addScoreBtn');
 const endGameBtn = document.getElementById('endGameBtn');
 const confirmBtn = document.getElementById('confirmScore');
-const cancelEditBtn = document.getElementById('cancelEdit');
+const cancelBtn = document.getElementById('cancelScore');
 const confirmEndGameBtn = document.getElementById('confirmEndGame');
 const cancelEndGameBtn = document.getElementById('cancelEndGame');
 const scoreInputs = Array.from({ length: 4 }, (_, i) => document.getElementById(`score${i + 1}`));
@@ -114,7 +114,6 @@ function hideModal() {
     modal.style.display = 'none';
     editingRow = null;
     selectedInput = null;
-    cancelEditBtn.style.display = 'none';
 }
 
 // Show end game modal
@@ -262,7 +261,6 @@ function editRow(index) {
     
     editingRow = index;
     showModal();
-    cancelEditBtn.style.display = 'block';
     currentGame.rounds[index].forEach((score, i) => {
         scoreInputs[i].value = score;
     });
@@ -292,7 +290,7 @@ endGameBtn.addEventListener('click', showEndGameModal);
 confirmEndGameBtn.addEventListener('click', endGame);
 cancelEndGameBtn.addEventListener('click', hideEndGameModal);
 confirmBtn.addEventListener('click', saveRoundScores);
-cancelEditBtn.addEventListener('click', hideModal);
+cancelBtn.addEventListener('click', hideModal);
 
 numButtons.forEach(button => {
     button.addEventListener('click', () => handleNumberClick(button.textContent));
