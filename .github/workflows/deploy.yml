@@ -23,4 +23,4 @@ jobs:
           folder: .             # Gốc project chứa index.html
           branch: gh-pages2      # Nhánh để deploy
           clean: true
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          token: ${{ secrets.PERSONAL_TOKEN }}
