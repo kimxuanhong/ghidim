@@ -17,6 +17,10 @@ jobs:
           echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-config.js
           echo "Firebase config created."
 
+      - name: Debug Firebase Config
+        run: |
+          cat firebase-config.js
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
