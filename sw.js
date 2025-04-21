@@ -9,7 +9,9 @@ const urlsToCache = [
   '/scoring.js',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
 ];
 
 // Install event - cache assets

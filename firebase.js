@@ -38,8 +38,29 @@ function setCurrentRoom(roomId) {
     return roomId;
 }
 
-// Listen for games in real time with a callback
+// Check network status
+function isOnline() {
+    return window.navigator.onLine;
+}
+
+// Get games from local storage
+function getGamesFromLocalStorage() {
+    const games = localStorage.getItem('games');
+    return games ? JSON.parse(games) : [];
+}
+
+// Save games to local storage
+function saveGamesToLocalStorage(games) {
+    localStorage.setItem('games', JSON.stringify(games));
+}
+
+// Modified listenForGames to use local storage when offline
 function listenForGames(callback) {
+    if (!isOnline()) {
+        const games = getGamesFromLocalStorage();
+        callback(games);
+        return null;
+    }
     // Remove previous listener if exists
     if (gamesListener) {
         gamesListener.off();
@@ -100,8 +121,11 @@ function listenForGames(callback) {
     return gamesListener;
 }
 
-// Get games from Firebase for the current room (one-time fetch)
+// Modified getGamesFromFirebase to use local storage when offline
 async function getGamesFromFirebase() {
+    if (!isOnline()) {
+        return getGamesFromLocalStorage();
+    }
     return new Promise((resolve, reject) => {
         db.ref(`rooms/${currentRoom}/games`).orderByChild('date').once('value')
             .then((snapshot) => {
@@ -152,8 +176,31 @@ async function getGamesFromFirebase() {
     });
 }
 
-// Save a game to Firebase
+// Function to sync local games with Firebase when back online
+function syncLocalGamesWithFirebase() {
+    if (isOnline()) {
+        const localGames = getGamesFromLocalStorage();
+        localGames.forEach(game => {
+            saveGameToFirebase(game);
+        });
+        // Clear local storage after syncing
+        localStorage.removeItem('games');
+    }
+}
+
+// Modified saveGameToFirebase to update UI immediately and sync later
 async function saveGameToFirebase(game) {
+    if (!isOnline()) {
+        const games = getGamesFromLocalStorage();
+        games.push(game);
+        saveGamesToLocalStorage(games);
+        // Update UI immediately
+        listenForGames(games => {
+            // Assuming there's a function to update the UI with new games
+            updateGamesUI(games);
+        });
+        return Promise.resolve(game);
+    }
     return new Promise((resolve, reject) => {
         try {
             let gameRef;
@@ -267,4 +314,8 @@ async function ensureRoomExists(roomId) {
                 reject(error);
             });
     });
-} 
+}
+
+// Call syncLocalGamesWithFirebase when the app starts or regains connectivity
+window.addEventListener('online', syncLocalGamesWithFirebase);
+syncLocalGamesWithFirebase(); 
