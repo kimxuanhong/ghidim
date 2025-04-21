@@ -237,7 +237,14 @@ function updateTotals() {
 function showModal() {
     resetInputs();
     modal.style.display = 'block';
-    scoreInputs[0].focus();
+    
+    // Focus on the first input and select it
+    if (scoreInputs.length > 0) {
+        selectInput(scoreInputs[0]);
+    }
+    
+    // Validate inputs initially (disable/enable confirm button)
+    validateInputs();
 }
 
 // Hide score input modal
@@ -334,10 +341,11 @@ function selectInput(input) {
     selectedInput = input;
     
     // Remove focus from all inputs
-    scoreInputs.forEach(i => i.classList.remove('focused'));
+    scoreInputs.forEach(i => i.classList.remove('selected-input'));
     
     // Add focus to selected input
-    input.classList.add('focused');
+    input.classList.add('selected-input');
+    input.focus();
 }
 
 // Handle number button click
@@ -348,17 +356,24 @@ function handleNumberClick(number) {
     validateInputs();
 }
 
-// Handle clear button click
+// Handle clear button click (now +/- button)
 function handleClear() {
-    scoreInputs.forEach(input => {
-        input.value = '';
-    });
     if (selectedInput) {
-        // Keep focus on the currently selected input
-        selectedInput.focus();
-    } else if (scoreInputs.length > 0) {
-        // If no input is selected, focus on the first one
-        scoreInputs[0].focus();
+        if (selectedInput.value) {
+            // Toggle between positive and negative
+            selectedInput.value = String(-parseFloat(selectedInput.value || '0'));
+        }
+        validateInputs();
+    } else {
+        // If no input is selected, clear all inputs
+        scoreInputs.forEach(input => {
+            input.value = '';
+        });
+        // Focus on the first input
+        if (scoreInputs.length > 0) {
+            scoreInputs[0].focus();
+            selectInput(scoreInputs[0]);
+        }
     }
 }
 
@@ -448,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Numeric keypad buttons
     numButtons.forEach(button => {
-        button.addEventListener('click', () => handleNumberClick(button.dataset.num));
+        button.addEventListener('click', () => handleNumberClick(button.textContent));
     });
     
     if (clearBtn) {
@@ -477,10 +492,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedInput.value += e.key;
                     validateInputs();
                 }
+            } else if (e.key === '-' || e.key === '+') {
+                // Handle negative/positive toggle
+                if (selectedInput && selectedInput.value) {
+                    selectedInput.value = String(-parseFloat(selectedInput.value));
+                    validateInputs();
+                }
             } else if (e.key === 'Backspace') {
                 if (selectedInput) {
                     selectedInput.value = selectedInput.value.slice(0, -1);
+                    validateInputs();
                 }
+            } else if (e.key === 'Tab') {
+                // Don't add custom handling for Tab - let default browser behavior work
+                // Just make sure validation runs after tab
+                setTimeout(validateInputs, 0);
             }
         }
     });
