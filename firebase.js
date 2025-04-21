@@ -18,27 +18,21 @@ let firebaseConnected = true;
 // Function to enable/disable Firebase connection
 function setFirebaseConnection(enable) {
     if (enable && !firebaseConnected) {
-        // Re-enable Firebase connection
         firebase.database().goOnline();
         firebaseConnected = true;
-        console.log('Firebase connection enabled');
     } else if (!enable && firebaseConnected) {
-        // Disable Firebase connection
         firebase.database().goOffline();
         firebaseConnected = false;
-        console.log('Firebase connection disabled');
     }
 }
 
 // Monitor online/offline status
 window.addEventListener('online', () => {
-    console.log('Device is online');
     setFirebaseConnection(true);
     syncIndexedDBWithFirebase();
 });
 
 window.addEventListener('offline', () => {
-    console.log('Device is offline');
     setFirebaseConnection(false);
 });
 
@@ -53,8 +47,6 @@ function cleanupListeners() {
         gamesListener.off();
         gamesListener = null;
     }
-    
-    // If there are any other listeners, they should be cleaned up here
 }
 
 // Set the current room
@@ -63,7 +55,6 @@ function setCurrentRoom(roomId) {
         roomId = 'public';
     }
     
-    // Clean up existing listeners
     cleanupListeners();
     
     currentRoom = roomId;
@@ -87,6 +78,19 @@ function saveGamesToLocalStorage(games) {
     localStorage.setItem('games', JSON.stringify(games));
 }
 
+// Format date helper function
+function formatDate(dateString) {
+    if (!dateString) return 'Không có ngày';
+    
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 // Function to update the UI with games
 function updateGamesUI(games) {
     const gamesList = document.getElementById('gamesList');
@@ -107,7 +111,7 @@ function updateGamesUI(games) {
     gamesList.style.display = 'block';
     gamesList.innerHTML = '';
 
-    games.forEach((game, index) => {
+    games.forEach((game) => {
         const gameElement = document.createElement('div');
         gameElement.className = 'game-item';
         
@@ -125,7 +129,6 @@ function updateGamesUI(games) {
         `;
         
         gameElement.addEventListener('click', () => {
-            // Save current game to localStorage
             localStorage.setItem('currentGame', JSON.stringify(game));
             window.location.href = 'scoring.html';
         });
@@ -134,17 +137,29 @@ function updateGamesUI(games) {
     });
 }
 
-// Format date helper function
-function formatDate(dateString) {
-    if (!dateString) return 'Không có ngày';
+// Create default game structure or fill in missing fields
+function ensureGameStructure(game) {
+    if (!game.id) {
+        game.id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
     
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    if (!game.date) {
+        game.date = new Date().toISOString();
+    }
+    
+    if (!game.rounds) {
+        game.rounds = [];
+    }
+    
+    if (!game.totalScores) {
+        game.totalScores = [0, 0, 0, 0];
+    }
+    
+    if (!game.players || !Array.isArray(game.players)) {
+        game.players = ['Người chơi 1', 'Người chơi 2', 'Người chơi 3', 'Người chơi 4'];
+    }
+    
+    return game;
 }
 
 // Modified listenForGames to use IndexedDB when offline
@@ -312,15 +327,10 @@ function syncLocalGamesWithFirebase() {
     }
 }
 
-// Open IndexedDB with Edge compatibility fixes
+// Open IndexedDB
 function openDatabase() {
     return new Promise((resolve, reject) => {
-        // Check if running on Edge
-        const isEdge = window.navigator.userAgent.indexOf("Edge") > -1;
-        console.log("Browser detection: Edge =", isEdge);
-        
-        // Fix for Edge: Use a simpler database structure
-        const dbName = isEdge ? 'GameDB' : 'GameDatabase';
+        const dbName = 'GameDatabase';
         const dbVersion = 1;
         
         let request;
@@ -339,11 +349,10 @@ function openDatabase() {
                 
                 // Create object store if it doesn't exist
                 if (!db.objectStoreNames.contains('games')) {
-                    // For Edge, use a simple primary key
                     const store = db.createObjectStore('games', { keyPath: 'id' });
                     console.log('Created games object store');
                     
-                    // Create indexes for faster queries (helpful in Edge)
+                    // Create indexes for faster queries
                     store.createIndex('date', 'date', { unique: false });
                     store.createIndex('room', 'room', { unique: false });
                 }
@@ -360,63 +369,7 @@ function openDatabase() {
 
         request.onerror = function(event) {
             console.error("IndexedDB open error:", event.target.error);
-            
-            // Special handling for Edge
-            if (isEdge) {
-                console.log("Attempting fallback for Edge browser");
-                // Try using localStorage as fallback
-                resolve({
-                    // Mock IndexedDB using localStorage for Edge
-                    transaction: function() {
-                        return {
-                            objectStore: function() {
-                                return {
-                                    get: function() {
-                                        return {
-                                            onsuccess: null,
-                                            onerror: null
-                                        };
-                                    },
-                                    put: function(data) {
-                                        try {
-                                            // Store in localStorage
-                                            let games = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
-                                            const index = games.findIndex(g => g.id === data.id);
-                                            if (index >= 0) {
-                                                games[index] = data;
-                                            } else {
-                                                games.push(data);
-                                            }
-                                            localStorage.setItem('edgeFallbackGames', JSON.stringify(games));
-                                            return {
-                                                onsuccess: function() {}
-                                            };
-                                        } catch (e) {
-                                            console.error("Edge fallback error:", e);
-                                            return {
-                                                onerror: function() {}
-                                            };
-                                        }
-                                    },
-                                    getAll: function() {
-                                        return {
-                                            onsuccess: function() {
-                                                this.result = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
-                                            },
-                                            onerror: function() {}
-                                        };
-                                    },
-                                    clear: function() {}
-                                };
-                            },
-                            oncomplete: function() {},
-                            onerror: function() {}
-                        };
-                    }
-                });
-            } else {
-                reject(event.target.error);
-            }
+            reject(event.target.error);
         };
     });
 }
@@ -491,15 +444,6 @@ async function saveGameToIndexedDB(game) {
 // Retrieve games from IndexedDB
 async function getGamesFromIndexedDB() {
     try {
-        const isEdge = window.navigator.userAgent.indexOf("Edge") > -1;
-        
-        // For Edge browsers, use the fallback localStorage if needed
-        if (isEdge && localStorage.getItem('edgeFallbackGames')) {
-            console.log("Using Edge fallback for getting games");
-            const games = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
-            return games;
-        }
-        
         const db = await openDatabase();
         const transaction = db.transaction('games', 'readonly');
         const store = transaction.objectStore('games');

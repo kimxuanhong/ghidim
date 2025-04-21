@@ -2,8 +2,7 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker registered successfully'))
-            .catch(err => console.log('Service Worker registration failed:', err));
+            .catch(err => console.error('Service Worker registration failed:', err));
     });
 }
 
@@ -167,7 +166,6 @@ function setupStartGameButton() {
     // Add click event
     newBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log("Start button clicked directly");
         // Force enable the button for this click
         this.disabled = false;
         createNewGame();
@@ -175,7 +173,6 @@ function setupStartGameButton() {
     
     // Initial validation
     validatePlayerNames();
-    console.log("Start game button set up successfully");
 }
 
 // Hide player names modal
@@ -200,41 +197,27 @@ function validatePlayerNames() {
         return false;
     }
     
-    // Log current values for debugging
-    console.log("Validating player names...");
-    playerNameInputs.forEach((input, index) => {
-        console.log(`Player ${index + 1}: '${input.value.trim()}'`);
-    });
-    
     let isValid = false;
     
     // When offline, allow the game to start with at least 2 players
     if (!isOnline()) {
         const validPlayersCount = playerNameInputs.filter(input => input.value.trim() !== '').length;
         isValid = validPlayersCount >= 2;
-        console.log(`Offline mode - Valid players: ${validPlayersCount}, isValid: ${isValid}`);
     } else {
         // When online, require all players to be filled
         isValid = playerNameInputs.every(input => input.value.trim() !== '');
-        console.log(`Online mode - All filled: ${isValid}`);
     }
     
-    // For testing, always enable the button but keep visual indication
     startGameBtn.disabled = false;
     startGameBtn.classList.toggle('disabled', !isValid);
-    
-    console.log(`Button state: disabled=${startGameBtn.disabled}, has disabled class=${startGameBtn.classList.contains('disabled')}`);
     
     return isValid;
 }
 
 // Create new game
 async function createNewGame() {
-    console.log("createNewGame called");
-    
     // Force validation one more time
     const isValid = validatePlayerNames();
-    console.log(`Form validation result: ${isValid}`);
     
     // Check if we're online or offline and validate accordingly
     if (isOnline()) {
@@ -271,8 +254,6 @@ async function createNewGame() {
     };
 
     try {
-        console.log(`Creating new game with players: ${playerNames.join(', ')}`);
-        
         // First check if we're online
         if (isOnline()) {
             // Ensure the room exists and set it as current
@@ -282,15 +263,12 @@ async function createNewGame() {
             // Save to Firebase
             const savedGame = await saveGameToFirebase(newGame);
             newGame.firebaseId = savedGame.firebaseId;
-            console.log("Game saved to Firebase successfully");
         } else {
             // In offline mode, just save to IndexedDB
-            console.log('Creating new game in offline mode');
             await saveGameToIndexedDB(newGame);
             if (roomId) {
                 setCurrentRoom(roomId);
             }
-            console.log("Game saved to IndexedDB successfully");
         }
         
         // Add to local array
@@ -298,12 +276,10 @@ async function createNewGame() {
         
         // Save current game to localStorage
         localStorage.setItem('currentGame', JSON.stringify(newGame));
-        console.log("Game saved to localStorage successfully");
         
         hidePlayerNamesModal();
         
         // Redirect to scoring page
-        console.log("Redirecting to scoring page...");
         window.location.href = 'scoring.html';
     } catch (error) {
         console.error("Error creating new game:", error);
@@ -318,59 +294,8 @@ function openGame(index) {
     window.location.href = 'scoring.html';
 }
 
-// Check if browser is Edge
-function isEdgeBrowser() {
-    return window.navigator.userAgent.indexOf("Edge") > -1;
-}
-
-// Special handling for different browsers
+// Setup event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM fully loaded");
-    
-    // Apply Edge-specific fixes if needed
-    if (isEdgeBrowser()) {
-        console.log("Applying Edge browser fixes");
-        // Fix for Edge: Add explicit click handlers to buttons using mousedown/mouseup events
-        document.querySelectorAll('button').forEach(button => {
-            button.addEventListener('mousedown', function(e) {
-                this.classList.add('edge-active');
-            });
-            
-            button.addEventListener('mouseup', function(e) {
-                this.classList.remove('edge-active');
-                
-                // Simulate click for specific buttons
-                if (this.id === 'startGameBtn') {
-                    console.log("Edge: Start Game button clicked via mouseup");
-                    e.preventDefault();
-                    createNewGame();
-                }
-                else if (this.id === 'cancelNewGame') {
-                    hidePlayerNamesModal();
-                }
-                else if (this.id === 'newGameBtn') {
-                    showPlayerNamesModal();
-                }
-                else if (this.id === 'joinRoomBtn') {
-                    joinRoom();
-                }
-            });
-        });
-        
-        // Add Edge-specific styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .edge-active { 
-                opacity: 0.8 !important;
-                transform: scale(0.98);
-            }
-            .disabled {
-                opacity: 0.5;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
     // Set up all event listeners
     if (newGameBtn) {
         newGameBtn.addEventListener('click', showPlayerNamesModal);

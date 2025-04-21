@@ -14,26 +14,11 @@ const urlsToCache = [
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
 ];
 
-// Check if this is running in Edge
-const isEdgeBrowser = () => {
-  return self.navigator && self.navigator.userAgent && self.navigator.userAgent.indexOf("Edge") > -1;
-};
-
 // Install event - cache assets
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
-  
-  // Force update for Edge browser
-  if (isEdgeBrowser()) {
-    self.skipWaiting();
-  }
-  
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Service Worker: Caching files');
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
       .catch(error => {
         console.error('Service Worker: Cache failed', error);
       })
@@ -42,19 +27,11 @@ self.addEventListener('install', event => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating...');
-  
-  // Force activate for Edge browser
-  if (isEdgeBrowser()) {
-    self.clients.claim();
-  }
-  
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Clearing old cache', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -65,19 +42,6 @@ self.addEventListener('activate', event => {
 
 // Fetch event - respond with cached resources when offline
 self.addEventListener('fetch', event => {
-  // Edge-specific handling
-  if (isEdgeBrowser()) {
-    // Simplified strategy for Edge: Try network first, then cache
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => {
-          return caches.match(event.request);
-        })
-    );
-    return;
-  }
-  
-  // Standard handling for other browsers
   event.respondWith(
     caches.match(event.request)
       .then(response => {

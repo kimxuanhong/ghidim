@@ -2,8 +2,7 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker registered successfully'))
-            .catch(err => console.log('Service Worker registration failed:', err));
+            .catch(err => console.error('Service Worker registration failed:', err));
     });
 }
 
@@ -200,212 +199,207 @@ function renderScores() {
 
 // Update total scores
 function updateTotals() {
-    // Ensure rounds array exists
-    if (!currentGame.rounds) {
-        currentGame.rounds = [];
+    if (!currentGame.rounds || !currentGame.rounds.length) {
         currentGame.totalScores = [0, 0, 0, 0];
-        
-        // Update UI with zeros
-        currentGame.totalScores.forEach((total, index) => {
-            document.getElementById(`total${index + 1}`).textContent = total;
+    } else {
+        // Calculate totals
+        currentGame.totalScores = [0, 0, 0, 0];
+        currentGame.rounds.forEach(round => {
+            if (!round) return;
+            
+            round.forEach((score, index) => {
+                if (typeof score === 'number') {
+                    currentGame.totalScores[index] += score;
+                }
+            });
         });
-        return;
     }
     
-    currentGame.totalScores = currentGame.rounds.reduce((totals, round) => {
-        // Skip undefined rounds
-        if (!round) return totals;
+    // Update total rows
+    const totalsRow = document.getElementById('totalScores');
+    if (totalsRow) {
+        totalsRow.innerHTML = `<td>Tổng</td>${currentGame.totalScores.map(score => `<td>${score}</td>`).join('')}`;
+    }
+    
+    // Find winner
+    if (currentGame.isEnded) {
+        const winnerIndex = findWinnerIndex();
         
-        // Process each score in the round
-        round.forEach((score, index) => {
-            // Ensure score is a number
-            const numericScore = parseInt(score) || 0;
-            totals[index] += numericScore;
-        });
-        return totals;
-    }, [0, 0, 0, 0]);
-
-    currentGame.totalScores.forEach((total, index) => {
-        document.getElementById(`total${index + 1}`).textContent = total;
-    });
+        // Get the matching cells in the totals row
+        const totalCells = totalsRow.querySelectorAll('td');
+        if (totalCells[winnerIndex + 1]) {
+            totalCells[winnerIndex + 1].classList.add('winner');
+        }
+    }
 }
 
-// Show score modal
+// Show score input modal
 function showModal() {
-    modal.style.display = 'block';
     resetInputs();
-    validateInputs();
+    modal.style.display = 'block';
+    scoreInputs[0].focus();
 }
 
-// Hide score modal
+// Hide score input modal
 function hideModal() {
     modal.style.display = 'none';
     editingRow = null;
-    selectedInput = null;
 }
 
-// Show end game modal
+// Show end game confirmation modal
 function showEndGameModal() {
     endGameModal.style.display = 'block';
 }
 
-// Hide end game modal
+// Hide end game confirmation modal
 function hideEndGameModal() {
     endGameModal.style.display = 'none';
 }
 
-// Set game ended state
+// Set game ended state (disable inputs, etc.)
 function setGameEndedState() {
-    document.body.classList.add('game-ended');
-    endGameBtn.style.display = 'none';
     addScoreBtn.style.display = 'none';
+    endGameBtn.style.display = 'none';
+    document.getElementById('gameStatus').textContent = 'Game kết thúc';
 }
 
-// End game
+// End the current game
 async function endGame() {
     currentGame.isEnded = true;
-    currentGame.endDate = new Date().toISOString();
     await saveCurrentGame();
-    setGameEndedState();
-    hideEndGameModal();
     
-    // Find and celebrate the winner
+    setGameEndedState();
     celebrateWinner();
+    hideEndGameModal();
 }
 
-// Celebrate the winner with confetti effect
+// Create celebration for the winner
 function celebrateWinner() {
     const winnerIndex = findWinnerIndex();
-    if (winnerIndex === -1) return;
-    
-    // Highlight winner's total
-    const winnerTotal = document.getElementById(`total${winnerIndex + 1}`);
-    winnerTotal.classList.add('winner-highlight');
-    
-    // Create confetti
-    confettiContainer.style.display = 'block';
-    createConfetti();
-    
-    // Show winner message
     const winnerName = currentGame.players[winnerIndex];
-    alert(`🎉 Chúc mừng ${winnerName} đã chiến thắng với ${currentGame.totalScores[winnerIndex]} điểm! 🏆`);
+    
+    const winnerMessage = document.createElement('div');
+    winnerMessage.className = 'winner-message';
+    winnerMessage.textContent = `${winnerName} chiến thắng! 🎉`;
+    
+    document.getElementById('content').prepend(winnerMessage);
+    
+    // Add confetti effect
+    createConfetti();
 }
 
 // Find the index of the player with the highest score
 function findWinnerIndex() {
-    if (!currentGame.totalScores || currentGame.totalScores.length === 0) return -1;
-    
-    let highestScore = Math.max(...currentGame.totalScores);
-    return currentGame.totalScores.indexOf(highestScore);
+    return currentGame.totalScores.reduce((maxIndex, score, index, array) => 
+        score > array[maxIndex] ? index : maxIndex, 0);
 }
 
-// Create confetti elements
+// Create confetti animation
 function createConfetti() {
-    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+    if (!confettiContainer) return;
     
-    // Clear any existing confetti
-    confettiContainer.innerHTML = '';
+    const colors = ['#FFD700', '#FF6347', '#00FF7F', '#1E90FF', '#FF1493', '#ADFF2F'];
+    const pieces = 100;
     
-    // Create 100 confetti pieces
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < pieces; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
         
-        // Random position, color, size and delay
-        const left = Math.random() * 100;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const size = Math.random() * 10 + 5;
-        const delay = Math.random() * 3;
+        // Randomize confetti properties
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.width = (Math.random() * 8 + 6) + 'px';
+        confetti.style.height = (Math.random() * 8 + 6) + 'px';
+        confetti.style.opacity = Math.random() + 0.5;
         
-        confetti.style.left = `${left}%`;
-        confetti.style.backgroundColor = color;
-        confetti.style.width = `${size}px`;
-        confetti.style.height = `${size}px`;
-        confetti.style.animationDelay = `${delay}s`;
+        // Animate confetti
+        confetti.style.animation = `fall ${Math.random() * 2 + 3}s linear infinite`;
+        confetti.style.animationDelay = Math.random() * 5 + 's';
         
         confettiContainer.appendChild(confetti);
     }
-    
-    // Remove confetti after animation completes
-    setTimeout(() => {
-        confettiContainer.style.display = 'none';
-    }, 8000);
 }
 
-// Reset input fields
+// Reset score inputs
 function resetInputs() {
     scoreInputs.forEach(input => {
         input.value = '';
-        input.classList.remove('selected-input');
     });
+    selectedInput = null;
 }
 
-// Select input field
+// Select an input field
 function selectInput(input) {
-    if (selectedInput) {
-        selectedInput.classList.remove('selected-input');
-    }
     selectedInput = input;
-    selectedInput.classList.add('selected-input');
+    
+    // Remove focus from all inputs
+    scoreInputs.forEach(i => i.classList.remove('focused'));
+    
+    // Add focus to selected input
+    input.classList.add('focused');
 }
 
-// Handle number button clicks
+// Handle number button click
 function handleNumberClick(number) {
-    if (selectedInput) {
-        selectedInput.value = selectedInput.value + number;
-        validateInputs();
-    }
+    if (!selectedInput) return;
+    
+    selectedInput.value += number;
+    validateInputs();
 }
 
-// Handle clear button (now +/- button)
+// Handle clear button click
 function handleClear() {
+    scoreInputs.forEach(input => {
+        input.value = '';
+    });
     if (selectedInput) {
-        if (selectedInput.value) {
-            // Toggle between positive and negative
-            selectedInput.value = String(-parseFloat(selectedInput.value || '0'));
-        }
-        validateInputs();
+        // Keep focus on the currently selected input
+        selectedInput.focus();
+    } else if (scoreInputs.length > 0) {
+        // If no input is selected, focus on the first one
+        scoreInputs[0].focus();
     }
 }
 
-// Handle backspace button
+// Handle backspace button click
 function handleBackspace() {
-    if (selectedInput) {
-        selectedInput.value = selectedInput.value.slice(0, -1);
-        validateInputs();
-    }
+    if (!selectedInput) return;
+    
+    selectedInput.value = selectedInput.value.slice(0, -1);
 }
 
-// Validate all inputs are filled
+// Validate score inputs
 function validateInputs() {
     const allFilled = scoreInputs.every(input => input.value.trim() !== '');
     confirmBtn.disabled = !allFilled;
-    confirmBtn.classList.toggle('disabled', !allFilled);
+    return allFilled;
 }
 
-// Edit existing row
+// Edit an existing row
 function editRow(index) {
     if (currentGame.isEnded) return;
     
     editingRow = index;
-    showModal();
-    currentGame.rounds[index].forEach((score, i) => {
-        scoreInputs[i].value = score;
+    const round = currentGame.rounds[index];
+    
+    scoreInputs.forEach((input, i) => {
+        input.value = round[i] || '';
     });
-    validateInputs();
+    
+    showModal();
 }
 
-// Save scores
+// Save the scores for the current round
 async function saveRoundScores() {
-    if (confirmBtn.disabled) return;
-
-    const roundScores = scoreInputs.map(input => parseInt(input.value) || 0);
+    const scores = scoreInputs.map(input => parseInt(input.value, 10) || 0);
     
     if (editingRow !== null) {
-        currentGame.rounds[editingRow] = roundScores;
+        // Update existing round
+        currentGame.rounds[editingRow] = scores;
     } else {
-        // Add new round to the beginning of the array
-        currentGame.rounds.unshift(roundScores);
+        // Add new round
+        currentGame.rounds.unshift(scores);
     }
     
     await saveCurrentGame();
@@ -413,33 +407,81 @@ async function saveRoundScores() {
     hideModal();
 }
 
-// Event Listeners
-addScoreBtn.addEventListener('click', showModal);
-endGameBtn.addEventListener('click', showEndGameModal);
-confirmEndGameBtn.addEventListener('click', endGame);
-cancelEndGameBtn.addEventListener('click', hideEndGameModal);
-confirmBtn.addEventListener('click', saveRoundScores);
-cancelBtn.addEventListener('click', hideModal);
-
-numButtons.forEach(button => {
-    button.addEventListener('click', () => handleNumberClick(button.textContent));
-});
-
-clearBtn.addEventListener('click', handleClear);
-backspaceBtn.addEventListener('click', handleBackspace);
-
-scoreInputs.forEach(input => {
-    input.addEventListener('click', () => selectInput(input));
-});
-
-// Close modals when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        hideModal();
-    } else if (e.target === endGameModal) {
-        hideEndGameModal();
+// Set up event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Load the current game
+    loadCurrentGame();
+    
+    // Add score button
+    if (addScoreBtn) {
+        addScoreBtn.addEventListener('click', showModal);
     }
-});
-
-// Initialize
-loadCurrentGame(); 
+    
+    // End game button
+    if (endGameBtn) {
+        endGameBtn.addEventListener('click', showEndGameModal);
+    }
+    
+    // Modal form buttons
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', saveRoundScores);
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideModal);
+    }
+    
+    // End game modal buttons
+    if (confirmEndGameBtn) {
+        confirmEndGameBtn.addEventListener('click', endGame);
+    }
+    
+    if (cancelEndGameBtn) {
+        cancelEndGameBtn.addEventListener('click', hideEndGameModal);
+    }
+    
+    // Score inputs focus events
+    scoreInputs.forEach(input => {
+        input.addEventListener('focus', () => selectInput(input));
+        input.addEventListener('input', validateInputs);
+    });
+    
+    // Numeric keypad buttons
+    numButtons.forEach(button => {
+        button.addEventListener('click', () => handleNumberClick(button.dataset.num));
+    });
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', handleClear);
+    }
+    
+    if (backspaceBtn) {
+        backspaceBtn.addEventListener('click', handleBackspace);
+    }
+    
+    // Back navigation
+    document.getElementById('backButton').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (modal.style.display === 'block') {
+            if (e.key === 'Enter' && validateInputs()) {
+                saveRoundScores();
+            } else if (e.key === 'Escape') {
+                hideModal();
+            } else if (/^\d$/.test(e.key)) {
+                // Numeric keys
+                if (selectedInput) {
+                    selectedInput.value += e.key;
+                    validateInputs();
+                }
+            } else if (e.key === 'Backspace') {
+                if (selectedInput) {
+                    selectedInput.value = selectedInput.value.slice(0, -1);
+                }
+            }
+        }
+    });
+}); 
