@@ -2,7 +2,52 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registered with scope:', registration.scope);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    console.log('New service worker is being installed...');
+                    const newWorker = registration.installing;
+                    
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New service worker is installed but waiting to activate
+                            showUpdateNotice();
+                        }
+                    });
+                });
+            })
             .catch(err => console.error('Service Worker registration failed:', err));
+            
+        // Check if there's a service worker already controlling the page
+        if (navigator.serviceWorker.controller) {
+            console.log('Page is controlled by a service worker');
+        }
+    });
+}
+
+// Show update notice
+function showUpdateNotice() {
+    // Check if notice already exists
+    if (document.querySelector('.sw-update-notice')) {
+        return;
+    }
+    
+    const notice = document.createElement('div');
+    notice.className = 'sw-update-notice';
+    notice.innerHTML = 'Đã có phiên bản mới. <button class="sw-update-btn">Cập nhật</button>';
+    document.body.appendChild(notice);
+    
+    // Show with animation
+    setTimeout(() => {
+        notice.classList.add('active');
+    }, 100);
+    
+    // Add click handler for update button
+    notice.querySelector('.sw-update-btn').addEventListener('click', () => {
+        // Reload the page to activate the new service worker
+        window.location.reload();
     });
 }
 
@@ -219,8 +264,10 @@ async function createNewGame() {
     // Force validation one more time
     const isValid = validatePlayerNames();
     
+    const isOffline = !isOnline();
+    
     // Check if we're online or offline and validate accordingly
-    if (isOnline()) {
+    if (!isOffline) {
         // When online, require all player names
         if (!playerNameInputs.every(input => input.value.trim())) {
             alert("Vui lòng nhập đủ thông tin cho tất cả 4 người chơi");
@@ -238,36 +285,59 @@ async function createNewGame() {
     const playerNames = playerNameInputs.map(input => {
         const value = input.value.trim();
         // Replace empty names with placeholder when offline
-        return value || (isOnline() ? '' : 'Người chơi');
+        return value || (isOffline ? 'Người chơi' : '');
     });
     
     const roomId = gameRoomInput.value.trim();
     
     // Create a new game object
     const newGame = {
-        id: Date.now(), // Use timestamp as ID for IndexedDB
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), // Use timestamp as ID
         date: new Date().toISOString(),
         players: playerNames,
         rounds: [],
         totalScores: [0, 0, 0, 0],
-        room: roomId || currentRoom
+        room: roomId || currentRoom,
+        createdOffline: isOffline
     };
 
     try {
         // First check if we're online
-        if (isOnline()) {
-            // Ensure the room exists and set it as current
-            await ensureRoomExists(roomId);
-            setCurrentRoom(roomId);
-            
-            // Save to Firebase
-            const savedGame = await saveGameToFirebase(newGame);
-            newGame.firebaseId = savedGame.firebaseId;
-        } else {
-            // In offline mode, just save to IndexedDB
-            await saveGameToIndexedDB(newGame);
-            if (roomId) {
+        if (!isOffline) {
+            try {
+                // Ensure the room exists and set it as current
+                await ensureRoomExists(roomId);
                 setCurrentRoom(roomId);
+                
+                // Save to Firebase
+                const savedGame = await saveGameToFirebase(newGame);
+                newGame.firebaseId = savedGame.firebaseId;
+                
+                console.log("Game saved to Firebase:", newGame);
+            } catch (firebaseError) {
+                console.error("Error saving to Firebase:", firebaseError);
+                
+                // If Firebase fails, save to IndexedDB and continue
+                await saveGameToIndexedDB(newGame);
+                
+                if (roomId) {
+                    setCurrentRoom(roomId);
+                }
+            }
+        } else {
+            console.log("Offline mode: Saving game to IndexedDB");
+            // In offline mode, just save to IndexedDB
+            try {
+                await saveGameToIndexedDB(newGame);
+                if (roomId) {
+                    setCurrentRoom(roomId);
+                }
+            } catch (dbError) {
+                console.error("Error saving to IndexedDB:", dbError);
+                // Fallback to localStorage
+                games = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY) || '[]');
+                games.unshift(newGame);
+                localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
             }
         }
         

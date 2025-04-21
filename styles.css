@@ -614,3 +614,67 @@ button:disabled {
     50% { opacity: 0.8; }
     100% { opacity: 1; }
 }
+
+/* Offline Indicator */
+.offline-indicator {
+    background-color: #ff5252;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.offline-mode .btn:not(.backspace-btn):not(.clear-btn):not(#backButton) {
+    background-color: #888;
+}
+
+/* Service Worker related styles */
+.sw-update-notice {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: none;
+}
+
+.sw-update-notice.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+.sw-update-btn {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    margin-left: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
