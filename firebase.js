@@ -312,24 +312,111 @@ function syncLocalGamesWithFirebase() {
     }
 }
 
-// Open IndexedDB
+// Open IndexedDB with Edge compatibility fixes
 function openDatabase() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('GameDatabase', 1);
+        // Check if running on Edge
+        const isEdge = window.navigator.userAgent.indexOf("Edge") > -1;
+        console.log("Browser detection: Edge =", isEdge);
+        
+        // Fix for Edge: Use a simpler database structure
+        const dbName = isEdge ? 'GameDB' : 'GameDatabase';
+        const dbVersion = 1;
+        
+        let request;
+        try {
+            request = indexedDB.open(dbName, dbVersion);
+        } catch (err) {
+            console.error("Error opening IndexedDB:", err);
+            reject(err);
+            return;
+        }
 
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('games')) {
-                db.createObjectStore('games', { keyPath: 'id', autoIncrement: true });
+        request.onupgradeneeded = function(event) {
+            try {
+                const db = event.target.result;
+                console.log('Upgrading IndexedDB schema');
+                
+                // Create object store if it doesn't exist
+                if (!db.objectStoreNames.contains('games')) {
+                    // For Edge, use a simple primary key
+                    const store = db.createObjectStore('games', { keyPath: 'id' });
+                    console.log('Created games object store');
+                    
+                    // Create indexes for faster queries (helpful in Edge)
+                    store.createIndex('date', 'date', { unique: false });
+                    store.createIndex('room', 'room', { unique: false });
+                }
+            } catch (err) {
+                console.error("Error in onupgradeneeded:", err);
             }
         };
 
-        request.onsuccess = (event) => {
-            resolve(event.target.result);
+        request.onsuccess = function(event) {
+            const db = event.target.result;
+            console.log(`IndexedDB opened successfully: ${dbName}`);
+            resolve(db);
         };
 
-        request.onerror = (event) => {
-            reject('Error opening database: ' + event.target.errorCode);
+        request.onerror = function(event) {
+            console.error("IndexedDB open error:", event.target.error);
+            
+            // Special handling for Edge
+            if (isEdge) {
+                console.log("Attempting fallback for Edge browser");
+                // Try using localStorage as fallback
+                resolve({
+                    // Mock IndexedDB using localStorage for Edge
+                    transaction: function() {
+                        return {
+                            objectStore: function() {
+                                return {
+                                    get: function() {
+                                        return {
+                                            onsuccess: null,
+                                            onerror: null
+                                        };
+                                    },
+                                    put: function(data) {
+                                        try {
+                                            // Store in localStorage
+                                            let games = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
+                                            const index = games.findIndex(g => g.id === data.id);
+                                            if (index >= 0) {
+                                                games[index] = data;
+                                            } else {
+                                                games.push(data);
+                                            }
+                                            localStorage.setItem('edgeFallbackGames', JSON.stringify(games));
+                                            return {
+                                                onsuccess: function() {}
+                                            };
+                                        } catch (e) {
+                                            console.error("Edge fallback error:", e);
+                                            return {
+                                                onerror: function() {}
+                                            };
+                                        }
+                                    },
+                                    getAll: function() {
+                                        return {
+                                            onsuccess: function() {
+                                                this.result = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
+                                            },
+                                            onerror: function() {}
+                                        };
+                                    },
+                                    clear: function() {}
+                                };
+                            },
+                            oncomplete: function() {},
+                            onerror: function() {}
+                        };
+                    }
+                });
+            } else {
+                reject(event.target.error);
+            }
         };
     });
 }
@@ -403,18 +490,53 @@ async function saveGameToIndexedDB(game) {
 
 // Retrieve games from IndexedDB
 async function getGamesFromIndexedDB() {
-    const db = await openDatabase();
-    const transaction = db.transaction('games', 'readonly');
-    const store = transaction.objectStore('games');
-    return new Promise((resolve, reject) => {
-        const request = store.getAll();
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-        request.onerror = (event) => {
-            reject('Error retrieving games from IndexedDB: ' + event.target.error);
-        };
-    });
+    try {
+        const isEdge = window.navigator.userAgent.indexOf("Edge") > -1;
+        
+        // For Edge browsers, use the fallback localStorage if needed
+        if (isEdge && localStorage.getItem('edgeFallbackGames')) {
+            console.log("Using Edge fallback for getting games");
+            const games = JSON.parse(localStorage.getItem('edgeFallbackGames') || '[]');
+            return games;
+        }
+        
+        const db = await openDatabase();
+        const transaction = db.transaction('games', 'readonly');
+        const store = transaction.objectStore('games');
+        
+        return new Promise((resolve, reject) => {
+            try {
+                const request = store.getAll();
+                
+                request.onsuccess = function(event) {
+                    const games = event.target.result || [];
+                    console.log(`Retrieved ${games.length} games from IndexedDB`);
+                    
+                    // Sort games by date (newest first) for consistency
+                    games.sort((a, b) => {
+                        const dateA = a.date ? new Date(a.date) : new Date(0);
+                        const dateB = b.date ? new Date(b.date) : new Date(0);
+                        return dateB - dateA;
+                    });
+                    
+                    resolve(games);
+                };
+                
+                request.onerror = function(event) {
+                    console.error('Error retrieving games from IndexedDB:', event.target.error);
+                    // Return empty array on error for graceful degradation
+                    resolve([]);
+                };
+            } catch (err) {
+                console.error('Exception in getGamesFromIndexedDB:', err);
+                // Return empty array on error
+                resolve([]);
+            }
+        });
+    } catch (error) {
+        console.error('Error in getGamesFromIndexedDB:', error);
+        return [];
+    }
 }
 
 // Sync IndexedDB with Firebase

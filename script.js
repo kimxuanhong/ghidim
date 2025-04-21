@@ -318,9 +318,58 @@ function openGame(index) {
     window.location.href = 'scoring.html';
 }
 
-// Event Listeners
+// Check if browser is Edge
+function isEdgeBrowser() {
+    return window.navigator.userAgent.indexOf("Edge") > -1;
+}
+
+// Special handling for different browsers
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded");
+    
+    // Apply Edge-specific fixes if needed
+    if (isEdgeBrowser()) {
+        console.log("Applying Edge browser fixes");
+        // Fix for Edge: Add explicit click handlers to buttons using mousedown/mouseup events
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', function(e) {
+                this.classList.add('edge-active');
+            });
+            
+            button.addEventListener('mouseup', function(e) {
+                this.classList.remove('edge-active');
+                
+                // Simulate click for specific buttons
+                if (this.id === 'startGameBtn') {
+                    console.log("Edge: Start Game button clicked via mouseup");
+                    e.preventDefault();
+                    createNewGame();
+                }
+                else if (this.id === 'cancelNewGame') {
+                    hidePlayerNamesModal();
+                }
+                else if (this.id === 'newGameBtn') {
+                    showPlayerNamesModal();
+                }
+                else if (this.id === 'joinRoomBtn') {
+                    joinRoom();
+                }
+            });
+        });
+        
+        // Add Edge-specific styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .edge-active { 
+                opacity: 0.8 !important;
+                transform: scale(0.98);
+            }
+            .disabled {
+                opacity: 0.5;
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     // Set up all event listeners
     if (newGameBtn) {
