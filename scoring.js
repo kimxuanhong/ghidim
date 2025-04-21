@@ -2,52 +2,7 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registered with scope:', registration.scope);
-                
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                    console.log('New service worker is being installed...');
-                    const newWorker = registration.installing;
-                    
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // New service worker is installed but waiting to activate
-                            showUpdateNotice();
-                        }
-                    });
-                });
-            })
             .catch(err => console.error('Service Worker registration failed:', err));
-            
-        // Check if there's a service worker already controlling the page
-        if (navigator.serviceWorker.controller) {
-            console.log('Page is controlled by a service worker');
-        }
-    });
-}
-
-// Show update notice
-function showUpdateNotice() {
-    // Check if notice already exists
-    if (document.querySelector('.sw-update-notice')) {
-        return;
-    }
-    
-    const notice = document.createElement('div');
-    notice.className = 'sw-update-notice';
-    notice.innerHTML = 'Đã có phiên bản mới. <button class="sw-update-btn">Cập nhật</button>';
-    document.body.appendChild(notice);
-    
-    // Show with animation
-    setTimeout(() => {
-        notice.classList.add('active');
-    }, 100);
-    
-    // Add click handler for update button
-    notice.querySelector('.sw-update-btn').addEventListener('click', () => {
-        // Reload the page to activate the new service worker
-        window.location.reload();
     });
 }
 
@@ -121,55 +76,40 @@ function listenForCurrentGame(gameId) {
 
 // Load current game from localStorage and set up real-time listener
 async function loadCurrentGame() {
-    try {
-        const savedGame = localStorage.getItem(CURRENT_GAME_KEY);
-        if (!savedGame) {
-            window.location.href = 'index.html';
-            return;
-        }
-        currentGame = JSON.parse(savedGame);
-        
-        // Ensure required properties exist
-        if (!currentGame.rounds) {
-            currentGame.rounds = [];
-        }
-        
-        if (!currentGame.totalScores) {
-            currentGame.totalScores = [0, 0, 0, 0];
-        }
-        
-        // Update room setting from game
-        if (currentGame.room) {
-            setCurrentRoom(currentGame.room);
-        } 
-        
-        // Add room display
-        updateRoomDisplay();
-        
-        updatePlayerNames();
-        renderScores();
-        
-        if (currentGame.isEnded) {
-            setGameEndedState();
-        }
-        
-        // Set up real-time listener if game has a firebaseId AND we're online
-        if (currentGame.firebaseId && isOnline()) {
-            try {
-                listenForCurrentGame(currentGame.firebaseId);
-            } catch (error) {
-                console.error("Failed to set up real-time listener:", error);
-                // Continue in offline mode
-            }
-        } else if (!isOnline()) {
-            console.log("Offline mode: Will not set up Firebase listener");
-            // Maybe show a visual indicator that we're in offline mode
-            showOfflineIndicator();
-        }
-    } catch (error) {
-        console.error("Error loading current game:", error);
-        alert("Có lỗi khi tải ván đấu. Vui lòng thử lại.");
+    const savedGame = localStorage.getItem(CURRENT_GAME_KEY);
+    if (!savedGame) {
         window.location.href = 'index.html';
+        return;
+    }
+    currentGame = JSON.parse(savedGame);
+    
+    // Ensure required properties exist
+    if (!currentGame.rounds) {
+        currentGame.rounds = [];
+    }
+    
+    if (!currentGame.totalScores) {
+        currentGame.totalScores = [0, 0, 0, 0];
+    }
+    
+    // Update room setting from game
+    if (currentGame.room) {
+        setCurrentRoom(currentGame.room);
+    } 
+    
+    // Add room display
+    updateRoomDisplay();
+    
+    updatePlayerNames();
+    renderScores();
+    
+    if (currentGame.isEnded) {
+        setGameEndedState();
+    }
+    
+    // Set up real-time listener if game has a firebaseId
+    if (currentGame.firebaseId) {
+        listenForCurrentGame(currentGame.firebaseId);
     }
 }
 
@@ -201,31 +141,9 @@ function updatePlayerNames() {
     });
 }
 
-// Show offline indicator
-function showOfflineIndicator() {
-    const header = document.querySelector('.header');
-    if (!header) return;
-    
-    // Remove any existing indicator first
-    const existingIndicator = document.getElementById('offlineIndicator');
-    if (existingIndicator) {
-        existingIndicator.remove();
-    }
-    
-    const offlineIndicator = document.createElement('div');
-    offlineIndicator.id = 'offlineIndicator';
-    offlineIndicator.className = 'offline-indicator';
-    offlineIndicator.textContent = 'Offline Mode';
-    
-    header.appendChild(offlineIndicator);
-    
-    // Add offline class to body for CSS styling
-    document.body.classList.add('offline-mode');
-}
-
 // Save current game to localStorage and Firebase
 async function saveCurrentGame() {
-    // Save to localStorage first (as a backup)
+    // Save to localStorage
     localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
     
     // Update in games list
@@ -243,30 +161,11 @@ async function saveCurrentGame() {
     // Update the stored games
     localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
     
-    // Save to IndexedDB as a backup regardless of connection status
+    // Save to Firebase
     try {
-        await saveGameToIndexedDB(currentGame);
-    } catch (dbError) {
-        console.error("Error saving game to IndexedDB:", dbError);
-    }
-    
-    // Save to Firebase if online
-    if (isOnline()) {
-        try {
-            await updateGameInFirebase(currentGame);
-            console.log("Game saved to Firebase successfully");
-        } catch (error) {
-            console.error("Error saving game to Firebase:", error);
-            
-            // If Firebase fails, make sure we're still saving to IndexedDB
-            try {
-                await saveGameToIndexedDB(currentGame);
-            } catch (innerError) {
-                console.error("Error in fallback save to IndexedDB:", innerError);
-            }
-        }
-    } else {
-        console.log("Offline mode: Game saved locally only");
+        await updateGameInFirebase(currentGame);
+    } catch (error) {
+        console.error("Error saving game to Firebase:", error);
     }
 }
 
@@ -624,22 +523,8 @@ async function saveRoundScores() {
         return true;
     } catch (error) {
         console.error("Error saving round scores:", error);
-        
-        // Attempt to save locally anyway
-        try {
-            localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
-            console.log("Scores saved to localStorage as fallback");
-            
-            // Update UI
-            renderScores();
-            hideModal();
-            
-            return true;
-        } catch (localError) {
-            console.error("Failed to save scores locally:", localError);
-            alert("Có lỗi khi lưu điểm. Vui lòng thử lại.");
-            return false;
-        }
+        alert("Có lỗi khi lưu điểm. Vui lòng thử lại.");
+        return false;
     }
 }
 

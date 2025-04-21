@@ -14,96 +14,38 @@
 let currentRoom = localStorage.getItem('currentRoom') || 'public';
 let gamesListener = null;
 let firebaseConnected = true;
-let forcedOfflineMode = false; // Vị trí khởi tạo biến forcedOfflineMode
-let connectedRef = null;
-let realOnlineStatus = true;
-
-// Kiểm tra kết nối Firebase thực tế
-function initializeFirebaseConnectionMonitor() {
-    try {
-        if (firebase && firebase.database) {
-            connectedRef = firebase.database().ref(".info/connected");
-            connectedRef.on("value", function(snap) {
-                realOnlineStatus = snap.val() === true;
-                console.log("Firebase connection status:", realOnlineStatus);
-            });
-        }
-    } catch (error) {
-        console.error("Could not initialize Firebase connection monitor:", error);
-        realOnlineStatus = false;
-    }
-}
-
-// Gọi hàm khởi tạo
-initializeFirebaseConnectionMonitor();
 
 // Function to enable/disable Firebase connection
 function setFirebaseConnection(enable) {
     if (enable && !firebaseConnected) {
-        try {
-            firebase.database().goOnline();
-            firebaseConnected = true;
-            forcedOfflineMode = false;
-            console.log("Firebase connection enabled");
-        } catch (error) {
-            console.error("Error enabling Firebase connection:", error);
-            forcedOfflineMode = true;
-        }
+        firebase.database().goOnline();
+        firebaseConnected = true;
     } else if (!enable && firebaseConnected) {
-        try {
-            firebase.database().goOffline();
-            firebaseConnected = false;
-            forcedOfflineMode = true;
-            console.log("Firebase connection disabled");
-        } catch (error) {
-            console.error("Error disabling Firebase connection:", error);
-        }
+        firebase.database().goOffline();
+        firebaseConnected = false;
     }
 }
 
 // Monitor online/offline status
 window.addEventListener('online', () => {
-    console.log("Browser reports online");
-    forcedOfflineMode = false;
-    try {
-        setFirebaseConnection(true);
-        setTimeout(() => {
-            syncIndexedDBWithFirebase().catch(err => {
-                console.error("Error syncing after online:", err);
-            });
-        }, 2000); // Delay to ensure connection is established
-    } catch (error) {
-        console.error("Error handling online event:", error);
-        forcedOfflineMode = true;
-    }
+    setFirebaseConnection(true);
+    syncIndexedDBWithFirebase();
 });
 
 window.addEventListener('offline', () => {
-    console.log("Browser reports offline");
-    forcedOfflineMode = true;
-    try {
-        setFirebaseConnection(false);
-    } catch (error) {
-        console.error("Error handling offline event:", error);
-    }
+    setFirebaseConnection(false);
 });
 
 // Check initial connection status
-if (!navigator.onLine) {
-    console.log("Initial state: offline");
-    forcedOfflineMode = true;
+if (!isOnline()) {
     setFirebaseConnection(false);
 }
 
 // Clean up all Firebase listeners
 function cleanupListeners() {
     if (gamesListener) {
-        try {
-            gamesListener.off();
-            gamesListener = null;
-        } catch (error) {
-            console.error("Error cleaning up listeners:", error);
-        }
+        gamesListener.off();
+        gamesListener = null;
     }
 }
 
@@ -120,40 +62,20 @@ function setCurrentRoom(roomId) {
     return roomId;
 }
 
-// Check network status - improved version
+// Check network status
 function isOnline() {
-    // Bị force offline hoặc browser báo offline
-    if (forcedOfflineMode || !navigator.onLine) {
-        return false;
-    }
-    
-    // Nếu Firebase báo mất kết nối và browser báo online
-    if (realOnlineStatus === false && navigator.onLine) {
-        // Có thể là internet có vấn đề hoặc không thể kết nối tới Firebase
-        return false;
-    }
-    
-    return true;
+    return window.navigator.onLine;
 }
 
 // Get games from local storage
 function getGamesFromLocalStorage() {
-    try {
-        const games = localStorage.getItem('games');
-        return games ? JSON.parse(games) : [];
-    } catch (error) {
-        console.error("Error getting games from localStorage:", error);
-        return [];
-    }
+    const games = localStorage.getItem('games');
+    return games ? JSON.parse(games) : [];
 }
 
 // Save games to local storage
 function saveGamesToLocalStorage(games) {
-    try {
-        localStorage.setItem('games', JSON.stringify(games));
-    } catch (error) {
-        console.error("Error saving games to localStorage:", error);
-    }
+    localStorage.setItem('games', JSON.stringify(games));
 }
 
 // Format date helper function
@@ -242,8 +164,6 @@ function ensureGameStructure(game) {
 
 // Modified listenForGames to use IndexedDB when offline
 function listenForGames(callback) {
-    console.log("listenForGames called, online status:", isOnline());
-    
     if (!isOnline()) {
         console.log('Offline mode: Loading games from IndexedDB');
         // Ensure Firebase is disconnected
@@ -255,114 +175,89 @@ function listenForGames(callback) {
             })
             .catch(error => {
                 console.error('Error loading games from IndexedDB:', error);
-                // Fallback to localStorage if IndexedDB fails
-                const localGames = getGamesFromLocalStorage();
-                callback(localGames);
+                callback([]);
             });
         return null;
     }
     
     // Ensure Firebase is connected when online
-    try {
-        setFirebaseConnection(true);
+    setFirebaseConnection(true);
+    
+    // Remove previous listener if exists
+    if (gamesListener) {
+        gamesListener.off();
+    }
+    
+    // Create a reference to games in the current room
+    const gamesRef = db.ref(`rooms/${currentRoom}/games`);
+    
+    // Order by date descending
+    gamesListener = gamesRef.orderByChild('date');
+    
+    // Listen for changes
+    gamesListener.on('value', (snapshot) => {
+        const games = [];
         
-        // Remove previous listener if exists
-        if (gamesListener) {
-            gamesListener.off();
+        // Handle the case when snapshot is null or empty
+        if (!snapshot || !snapshot.exists()) {
+            callback(games);
+            return;
         }
         
-        // Create a reference to games in the current room
-        const gamesRef = db.ref(`rooms/${currentRoom}/games`);
-        
-        // Order by date descending
-        gamesListener = gamesRef.orderByChild('date');
-        
-        // Listen for changes
-        gamesListener.on('value', (snapshot) => {
-            const games = [];
+        snapshot.forEach((childSnapshot) => {
+            // Skip null or invalid child snapshots
+            if (!childSnapshot || !childSnapshot.exists()) return;
             
-            // Handle the case when snapshot is null or empty
-            if (!snapshot || !snapshot.exists()) {
-                callback(games);
-                return;
+            const game = childSnapshot.val();
+            if (!game) return;
+            
+            game.firebaseId = childSnapshot.key;
+            
+            // Ensure required properties exist
+            if (!game.rounds) {
+                game.rounds = [];
             }
             
-            snapshot.forEach((childSnapshot) => {
-                // Skip null or invalid child snapshots
-                if (!childSnapshot || !childSnapshot.exists()) return;
-                
-                const game = childSnapshot.val();
-                if (!game) return;
-                
-                game.firebaseId = childSnapshot.key;
-                
-                // Ensure required properties exist
-                if (!game.rounds) {
-                    game.rounds = [];
-                }
-                
-                if (!game.totalScores) {
-                    game.totalScores = [0, 0, 0, 0];
-                }
-                
-                games.push(game);
-            });
-            
-            // Sort games by date (newest first)
-            games.sort((a, b) => {
-                // Handle possible undefined dates
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateB - dateA;
-            });
-            
-            // Save to IndexedDB for offline use
-            try {
-                games.forEach(game => {
-                    saveGameToIndexedDB(game);
-                });
-            } catch (error) {
-                console.error('Error caching games to IndexedDB:', error);
+            if (!game.totalScores) {
+                game.totalScores = [0, 0, 0, 0];
             }
             
-            // Call the callback with the games array
-            callback(games);
-        }, (error) => {
-            console.error("Error in listenForGames:", error);
-            // Set offline mode if Firebase has connection issues
-            forcedOfflineMode = true;
-            
-            // Fallback to IndexedDB if Firebase fails
-            getGamesFromIndexedDB()
-                .then(games => {
-                    callback(games);
-                })
-                .catch(err => {
-                    console.error('Failed to get games from IndexedDB:', err);
-                    // Try localStorage as a final fallback
-                    const localGames = getGamesFromLocalStorage();
-                    callback(localGames || []);
-                });
+            games.push(game);
         });
         
-        return gamesListener;
-    } catch (error) {
-        console.error("Exception in listenForGames:", error);
-        forcedOfflineMode = true;
+        // Sort games by date (newest first)
+        games.sort((a, b) => {
+            // Handle possible undefined dates
+            const dateA = a.date ? new Date(a.date) : new Date(0);
+            const dateB = b.date ? new Date(b.date) : new Date(0);
+            return dateB - dateA;
+        });
         
-        // Fallback to IndexedDB
+        // Save to IndexedDB for offline use
+        try {
+            games.forEach(game => {
+                saveGameToIndexedDB(game);
+            });
+        } catch (error) {
+            console.error('Error caching games to IndexedDB:', error);
+        }
+        
+        // Call the callback with the games array
+        callback(games);
+    }, (error) => {
+        console.error("Error in listenForGames:", error);
+        // Fallback to IndexedDB if Firebase fails
         getGamesFromIndexedDB()
             .then(games => {
                 callback(games);
             })
             .catch(err => {
-                console.error('Failed to get games from IndexedDB in catch block:', err);
-                // Fallback to localStorage
-                const localGames = getGamesFromLocalStorage();
-                callback(localGames || []);
+                console.error('Failed to get games from IndexedDB:', err);
+                callback([]);
             });
-        return null;
-    }
+    });
+    
+    return gamesListener;
 }
 
 // Modified getGamesFromFirebase to use local storage when offline
@@ -588,44 +483,18 @@ async function getGamesFromIndexedDB() {
     }
 }
 
-// Sync IndexedDB with Firebase - with improved error handling
+// Sync IndexedDB with Firebase
 async function syncIndexedDBWithFirebase() {
-    console.log("Attempting to sync IndexedDB with Firebase");
-    
-    if (!isOnline()) {
-        console.log("Cannot sync - offline mode");
-        return;
-    }
-    
-    try {
+    if (isOnline()) {
         const games = await getGamesFromIndexedDB();
-        console.log(`Found ${games.length} games to sync`);
-        
-        for (const game of games) {
-            try {
-                await saveGameToFirebase(game);
-                console.log(`Synced game: ${game.id}`);
-            } catch (error) {
-                console.error(`Failed to sync game ${game.id}:`, error);
-            }
-        }
-        
-        console.log("Sync completed, clearing IndexedDB");
-        
-        // Clear IndexedDB after successful sync
+        games.forEach(async (game) => {
+            await saveGameToFirebase(game); // Assuming this function saves to Firebase
+        });
+        // Clear IndexedDB after syncing
         const db = await openDatabase();
         const transaction = db.transaction('games', 'readwrite');
         const store = transaction.objectStore('games');
-        await new Promise((resolve, reject) => {
-            const request = store.clear();
-            request.onsuccess = resolve;
-            request.onerror = (event) => reject(event.target.error);
-        });
-        
-        console.log("IndexedDB cleared after sync");
-    } catch (error) {
-        console.error("Error during IndexedDB sync:", error);
-        throw error;
+        store.clear();
     }
 }
 

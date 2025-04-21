@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v4';
+const CACHE_NAME = 'card-game-v3';
 const urlsToCache = [
   // HTML pages
   '/',
@@ -18,7 +18,7 @@ const urlsToCache = [
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   
-  // Firebase libs (external resources) - these are marked as optional
+  // Firebase libs (external resources)
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
@@ -34,20 +34,7 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Caching app resources');
-        // First try to cache all local resources (essential ones)
-        const localResources = urlsToCache.filter(url => !url.includes('gstatic.com'));
-        return cache.addAll(localResources)
-          .then(() => {
-            // Then try to cache Firebase resources, but don't fail if they can't be cached
-            const firebaseResources = urlsToCache.filter(url => url.includes('gstatic.com'));
-            return Promise.allSettled(
-              firebaseResources.map(url => 
-                fetch(url, { mode: 'no-cors' })
-                  .then(response => cache.put(url, response))
-                  .catch(err => console.log('Could not cache Firebase resource:', url, err))
-              )
-            );
-          });
+        return cache.addAll(urlsToCache);
       })
       .catch(error => {
         console.error('Service Worker: Cache failed', error);
@@ -79,45 +66,9 @@ self.addEventListener('activate', event => {
 
 // Network first, falling back to cache strategy for most requests
 self.addEventListener('fetch', event => {
-  // Skip non-GET requests and non-http(s) requests
-  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
-    return;
-  }
-  
-  // Special handling for Firebase API requests - don't try to cache or handle them
-  if (event.request.url.includes('firebasedatabase.app') || 
-      event.request.url.includes('firebaseio.com')) {
-    // Let the browser handle Firebase requests naturally
-    // This prevents issues when offline as Firebase has its own offline capabilities
-    return;
-  }
-  
-  // For Firebase library resources, try cache first, then network
-  if (event.request.url.includes('gstatic.com')) {
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request)
-            .then(fetchResponse => {
-              return caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, fetchResponse.clone());
-                  return fetchResponse;
-                });
-            })
-            .catch(error => {
-              console.error('Failed to fetch Firebase library:', error);
-              // Return a fallback response for Firebase libraries
-              return new Response(
-                'console.log("Firebase library not available offline");', 
-                { 
-                  headers: { 'Content-Type': 'application/javascript' },
-                  status: 200
-                }
-              );
-            });
-        })
-    );
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin) && 
+      !event.request.url.includes('gstatic.com')) {
     return;
   }
   
@@ -143,7 +94,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // For all other requests, try network first, then cache
+  // For other requests, try network first, then cache
   event.respondWith(
     fetch(event.request.clone())
       .then(response => {
@@ -166,8 +117,7 @@ self.addEventListener('fetch', event => {
             }
             
             // If the request is for an HTML page, return the offline page
-            if (event.request.headers.get('accept') && 
-                event.request.headers.get('accept').includes('text/html')) {
+            if (event.request.headers.get('accept').includes('text/html')) {
               return caches.match('/index.html');
             }
             
