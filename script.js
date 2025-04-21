@@ -140,9 +140,42 @@ async function joinRoom() {
 function showPlayerNamesModal() {
     playerNamesModal.style.display = 'block';
     resetNameInputs();
-    validatePlayerNames(); // Validate initially to disable button
-    playerNameInputs[0].focus();
+    
+    // Set room input
     gameRoomInput.value = currentRoom;
+    
+    // Focus on first input
+    playerNameInputs[0].focus();
+
+    // Make sure the button works properly
+    setupStartGameButton();
+}
+
+// Set up the Start Game button with proper event listener
+function setupStartGameButton() {
+    const startBtn = document.getElementById('startGameBtn');
+    
+    if (!startBtn) {
+        console.error("Start game button not found");
+        return;
+    }
+    
+    // Remove existing listeners to avoid duplicates
+    const newBtn = startBtn.cloneNode(true);
+    startBtn.parentNode.replaceChild(newBtn, startBtn);
+    
+    // Add click event
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log("Start button clicked directly");
+        // Force enable the button for this click
+        this.disabled = false;
+        createNewGame();
+    });
+    
+    // Initial validation
+    validatePlayerNames();
+    console.log("Start game button set up successfully");
 }
 
 // Hide player names modal
@@ -160,49 +193,122 @@ function resetNameInputs() {
 
 // Validate player names
 function validatePlayerNames() {
-    const allFilled = playerNameInputs.every(input => input.value.trim() !== '');
-    startGameBtn.disabled = !allFilled;
-    startGameBtn.classList.toggle('disabled', !allFilled);
+    // Make sure we have the latest reference to the button
+    const startGameBtn = document.getElementById('startGameBtn');
+    if (!startGameBtn) {
+        console.error("Start game button not found!");
+        return false;
+    }
+    
+    // Log current values for debugging
+    console.log("Validating player names...");
+    playerNameInputs.forEach((input, index) => {
+        console.log(`Player ${index + 1}: '${input.value.trim()}'`);
+    });
+    
+    let isValid = false;
+    
+    // When offline, allow the game to start with at least 2 players
+    if (!isOnline()) {
+        const validPlayersCount = playerNameInputs.filter(input => input.value.trim() !== '').length;
+        isValid = validPlayersCount >= 2;
+        console.log(`Offline mode - Valid players: ${validPlayersCount}, isValid: ${isValid}`);
+    } else {
+        // When online, require all players to be filled
+        isValid = playerNameInputs.every(input => input.value.trim() !== '');
+        console.log(`Online mode - All filled: ${isValid}`);
+    }
+    
+    // For testing, always enable the button but keep visual indication
+    startGameBtn.disabled = false;
+    startGameBtn.classList.toggle('disabled', !isValid);
+    
+    console.log(`Button state: disabled=${startGameBtn.disabled}, has disabled class=${startGameBtn.classList.contains('disabled')}`);
+    
+    return isValid;
 }
 
 // Create new game
 async function createNewGame() {
-    if (!playerNameInputs.every(input => input.value.trim())) {
-        return; // Don't create if not all names are filled
+    console.log("createNewGame called");
+    
+    // Force validation one more time
+    const isValid = validatePlayerNames();
+    console.log(`Form validation result: ${isValid}`);
+    
+    // Check if we're online or offline and validate accordingly
+    if (isOnline()) {
+        // When online, require all player names
+        if (!playerNameInputs.every(input => input.value.trim())) {
+            alert("Vui lòng nhập đủ thông tin cho tất cả 4 người chơi");
+            return; // Don't create if not all names are filled
+        }
+    } else {
+        // When offline, require at least 2 player names
+        const validPlayersCount = playerNameInputs.filter(input => input.value.trim() !== '').length;
+        if (validPlayersCount < 2) {
+            alert("Vui lòng nhập ít nhất 2 người chơi");
+            return;
+        }
     }
 
-    const playerNames = playerNameInputs.map(input => input.value.trim());
+    const playerNames = playerNameInputs.map(input => {
+        const value = input.value.trim();
+        // Replace empty names with placeholder when offline
+        return value || (isOnline() ? '' : 'Người chơi');
+    });
+    
     const roomId = gameRoomInput.value.trim();
     
-    // Ensure the room exists and set it as current
-    await ensureRoomExists(roomId);
-    setCurrentRoom(roomId);
-    
+    // Create a new game object
     const newGame = {
-        id: Date.now(),
+        id: Date.now(), // Use timestamp as ID for IndexedDB
         date: new Date().toISOString(),
         players: playerNames,
         rounds: [],
         totalScores: [0, 0, 0, 0],
-        room: currentRoom
+        room: roomId || currentRoom
     };
 
-    // Save to Firebase
     try {
-        const savedGame = await saveGameToFirebase(newGame);
-        newGame.firebaseId = savedGame.firebaseId;
+        console.log(`Creating new game with players: ${playerNames.join(', ')}`);
+        
+        // First check if we're online
+        if (isOnline()) {
+            // Ensure the room exists and set it as current
+            await ensureRoomExists(roomId);
+            setCurrentRoom(roomId);
+            
+            // Save to Firebase
+            const savedGame = await saveGameToFirebase(newGame);
+            newGame.firebaseId = savedGame.firebaseId;
+            console.log("Game saved to Firebase successfully");
+        } else {
+            // In offline mode, just save to IndexedDB
+            console.log('Creating new game in offline mode');
+            await saveGameToIndexedDB(newGame);
+            if (roomId) {
+                setCurrentRoom(roomId);
+            }
+            console.log("Game saved to IndexedDB successfully");
+        }
+        
+        // Add to local array
+        games.unshift(newGame);
+        
+        // Save current game to localStorage
+        localStorage.setItem('currentGame', JSON.stringify(newGame));
+        console.log("Game saved to localStorage successfully");
+        
+        hidePlayerNamesModal();
+        
+        // Redirect to scoring page
+        console.log("Redirecting to scoring page...");
+        window.location.href = 'scoring.html';
     } catch (error) {
-        console.error("Error saving new game to Firebase:", error);
+        console.error("Error creating new game:", error);
+        alert("Có lỗi khi tạo ván mới. Vui lòng thử lại.");
     }
-
-    // Add to local array and save
-    games.unshift(newGame);
-    saveGames();
-    saveCurrentGame(newGame);
-    hidePlayerNamesModal();
-    
-    // Redirect to scoring page
-    window.location.href = 'scoring.html';
 }
 
 // Open existing game
@@ -213,28 +319,44 @@ function openGame(index) {
 }
 
 // Event Listeners
-newGameBtn.addEventListener('click', showPlayerNamesModal);
-startGameBtn.addEventListener('click', createNewGame);
-cancelNewGameBtn.addEventListener('click', hidePlayerNamesModal);
-joinRoomBtn.addEventListener('click', joinRoom);
-
-// Add input event listeners for validation
-playerNameInputs.forEach(input => {
-    input.addEventListener('input', validatePlayerNames);
-});
-
-// Handle Enter key in room input
-roomInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        joinRoom();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded");
+    
+    // Set up all event listeners
+    if (newGameBtn) {
+        newGameBtn.addEventListener('click', showPlayerNamesModal);
     }
-});
-
-// Close modal when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === playerNamesModal) {
-        hidePlayerNamesModal();
+    
+    if (cancelNewGameBtn) {
+        cancelNewGameBtn.addEventListener('click', hidePlayerNamesModal);
     }
+    
+    if (joinRoomBtn) {
+        joinRoomBtn.addEventListener('click', joinRoom);
+    }
+    
+    // Add input event listeners for validation
+    playerNameInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', validatePlayerNames);
+        }
+    });
+    
+    // Handle Enter key in room input
+    if (roomInput) {
+        roomInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinRoom();
+            }
+        });
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === playerNamesModal) {
+            hidePlayerNamesModal();
+        }
+    });
 });
 
 // Initialize
