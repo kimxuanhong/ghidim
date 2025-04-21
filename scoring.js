@@ -235,20 +235,15 @@ function updateTotals() {
 
 // Show score input modal
 function showModal() {
-    // Nếu không ở chế độ chỉnh sửa, reset tất cả các ô nhập
-    if (editingRow === null) {
-        resetInputs();
-    }
-    
-    // Hiển thị modal
+    resetInputs();
     modal.style.display = 'block';
     
-    // Focus vào ô nhập liệu đầu tiên nếu không có ô nào được chọn
-    if (!selectedInput && scoreInputs.length > 0) {
+    // Focus on the first input and select it
+    if (scoreInputs.length > 0) {
         selectInput(scoreInputs[0]);
     }
     
-    // Validate inputs để cập nhật trạng thái nút xác nhận
+    // Validate inputs initially (disable/enable confirm button)
     validateInputs();
 }
 
@@ -450,18 +445,8 @@ function handleBackspace() {
 
 // Validate score inputs
 function validateInputs() {
-    // Kiểm tra xem mỗi ô input có giá trị hợp lệ hay không (có thể là số âm, số 0 hoặc số dương)
-    const allFilled = scoreInputs.every(input => {
-        // Cho phép giá trị là số âm hoặc số 0, nhưng không cho phép rỗng
-        const value = input.value.trim();
-        return value !== '' && !isNaN(parseFloat(value));
-    });
-    
-    // Kích hoạt/vô hiệu hóa nút xác nhận dựa trên kết quả validate
-    if (confirmBtn) {
-        confirmBtn.disabled = !allFilled;
-    }
-    
+    const allFilled = scoreInputs.every(input => input.value.trim() !== '');
+    confirmBtn.disabled = !allFilled;
     return allFilled;
 }
 
@@ -469,63 +454,31 @@ function validateInputs() {
 function editRow(index) {
     if (currentGame.isEnded) return;
     
-    console.log("Editing row", index, "with data:", currentGame.rounds[index]);
-    
-    // Lưu vị trí đang chỉnh sửa
     editingRow = index;
-    
-    // Lấy dữ liệu vòng điểm
     const round = currentGame.rounds[index];
     
-    // Đặt giá trị cho các ô nhập liệu và kiểm tra hợp lệ
     scoreInputs.forEach((input, i) => {
-        // Chuyển đổi giá trị sang chuỗi và đảm bảo giá trị là 0 nếu không xác định
-        input.value = round[i] !== undefined ? String(round[i]) : '';
+        input.value = round[i] || '';
     });
     
-    // Mở modal và chọn ô nhập liệu đầu tiên
     showModal();
-    
-    // Kích hoạt validate để enable/disable nút xác nhận
-    validateInputs();
 }
 
 // Save the scores for the current round
 async function saveRoundScores() {
-    try {
-        // Parse các giá trị nhập vào thành số, đảm bảo giữ lại dấu âm nếu có
-        const scores = scoreInputs.map(input => {
-            const value = input.value.trim();
-            return value === '' ? 0 : parseInt(value, 10);
-        });
-        
-        console.log("Saving scores:", scores, "for row:", editingRow);
-        
-        if (editingRow !== null) {
-            // Update existing round
-            console.log("Updating existing round at index", editingRow);
-            currentGame.rounds[editingRow] = scores;
-        } else {
-            // Add new round
-            console.log("Adding new round");
-            currentGame.rounds.unshift(scores);
-        }
-        
-        // Lưu game
-        await saveCurrentGame();
-        
-        // Cập nhật giao diện
-        renderScores();
-        
-        // Đóng modal
-        hideModal();
-        
-        return true;
-    } catch (error) {
-        console.error("Error saving round scores:", error);
-        alert("Có lỗi khi lưu điểm. Vui lòng thử lại.");
-        return false;
+    const scores = scoreInputs.map(input => parseInt(input.value, 10) || 0);
+    
+    if (editingRow !== null) {
+        // Update existing round
+        currentGame.rounds[editingRow] = scores;
+    } else {
+        // Add new round
+        currentGame.rounds.unshift(scores);
     }
+    
+    await saveCurrentGame();
+    renderScores();
+    hideModal();
 }
 
 // Set up event listeners
