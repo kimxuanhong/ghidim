@@ -265,19 +265,54 @@ function hideEndGameModal() {
 
 // Set game ended state (disable inputs, etc.)
 function setGameEndedState() {
-    addScoreBtn.style.display = 'none';
-    endGameBtn.style.display = 'none';
-    document.getElementById('gameStatus').textContent = 'Game kết thúc';
+    // Ẩn các nút không cần thiết khi game kết thúc
+    if (addScoreBtn) addScoreBtn.style.display = 'none';
+    if (endGameBtn) endGameBtn.style.display = 'none';
+    
+    // Hiển thị thông báo game đã kết thúc
+    const gameStatusEl = document.getElementById('gameStatus');
+    if (gameStatusEl) {
+        gameStatusEl.textContent = 'Game đã kết thúc';
+        gameStatusEl.style.display = 'block';
+    }
+    
+    // Thêm class cho body để CSS có thể style các phần tử khác
+    document.body.classList.add('game-ended');
+    
+    // Disable việc click vào các hàng điểm số
+    const rows = document.querySelectorAll('#scoreTableBody tr');
+    rows.forEach(row => {
+        row.style.cursor = 'default';
+        row.onclick = null;
+    });
 }
 
 // End the current game
 async function endGame() {
-    currentGame.isEnded = true;
-    await saveCurrentGame();
-    
-    setGameEndedState();
-    celebrateWinner();
-    hideEndGameModal();
+    try {
+        // Đặt trạng thái game là đã kết thúc
+        currentGame.isEnded = true;
+        // Lưu ngày giờ kết thúc
+        currentGame.endDate = new Date().toISOString();
+        
+        // Lưu game vào storage
+        await saveCurrentGame();
+        
+        // Cập nhật UI
+        setGameEndedState();
+        
+        // Hiển thị hiệu ứng ăn mừng
+        celebrateWinner();
+        
+        // Đóng modal xác nhận
+        hideEndGameModal();
+        
+        return true;
+    } catch (error) {
+        console.error("Lỗi khi kết thúc game:", error);
+        alert("Có lỗi xảy ra khi kết thúc ván đấu. Vui lòng thử lại.");
+        return false;
+    }
 }
 
 // Create celebration for the winner
@@ -289,10 +324,30 @@ function celebrateWinner() {
     winnerMessage.className = 'winner-message';
     winnerMessage.textContent = `${winnerName} chiến thắng! 🎉`;
     
-    document.getElementById('content').prepend(winnerMessage);
+    // Thêm vào đầu container
+    const contentDiv = document.getElementById('content');
+    if (contentDiv.firstChild) {
+        contentDiv.insertBefore(winnerMessage, contentDiv.firstChild);
+    } else {
+        contentDiv.appendChild(winnerMessage);
+    }
+    
+    // Hiển thị container confetti
+    if (confettiContainer) {
+        confettiContainer.style.display = 'block';
+    }
     
     // Add confetti effect
     createConfetti();
+    
+    // Highlight winner in total row
+    const totalsRow = document.getElementById('totalScores');
+    if (totalsRow) {
+        const cells = totalsRow.querySelectorAll('td');
+        if (cells[winnerIndex + 1]) {
+            cells[winnerIndex + 1].classList.add('winner');
+        }
+    }
 }
 
 // Find the index of the player with the highest score
@@ -305,8 +360,11 @@ function findWinnerIndex() {
 function createConfetti() {
     if (!confettiContainer) return;
     
+    // Clear existing confetti
+    confettiContainer.innerHTML = '';
+    
     const colors = ['#FFD700', '#FF6347', '#00FF7F', '#1E90FF', '#FF1493', '#ADFF2F'];
-    const pieces = 100;
+    const pieces = 150;
     
     for (let i = 0; i < pieces; i++) {
         const confetti = document.createElement('div');
@@ -320,8 +378,9 @@ function createConfetti() {
         confetti.style.height = (Math.random() * 8 + 6) + 'px';
         confetti.style.opacity = Math.random() + 0.5;
         
-        // Animate confetti
-        confetti.style.animation = `fall ${Math.random() * 2 + 3}s linear infinite`;
+        // Animate confetti with random duration and delay
+        const duration = Math.random() * 3 + 2;
+        confetti.style.animation = `fall ${duration}s linear forwards`;
         confetti.style.animationDelay = Math.random() * 5 + 's';
         
         confettiContainer.appendChild(confetti);
@@ -424,17 +483,31 @@ async function saveRoundScores() {
 
 // Set up event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM loaded - initializing scoring page");
+    
     // Load the current game
     loadCurrentGame();
     
+    // Đảm bảo các nút tồn tại trước khi gán sự kiện
+    console.log("Setting up button event listeners");
+    
     // Add score button
     if (addScoreBtn) {
+        console.log("Add score button found");
         addScoreBtn.addEventListener('click', showModal);
+    } else {
+        console.error("Add score button not found");
     }
     
     // End game button
     if (endGameBtn) {
-        endGameBtn.addEventListener('click', showEndGameModal);
+        console.log("End game button found");
+        endGameBtn.addEventListener('click', function() {
+            console.log("End game button clicked");
+            showEndGameModal();
+        });
+    } else {
+        console.error("End game button not found");
     }
     
     // Modal form buttons
@@ -448,7 +521,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // End game modal buttons
     if (confirmEndGameBtn) {
-        confirmEndGameBtn.addEventListener('click', endGame);
+        console.log("Confirm end game button found");
+        confirmEndGameBtn.addEventListener('click', function() {
+            console.log("Confirm end game clicked");
+            endGame();
+        });
+    } else {
+        console.error("Confirm end game button not found");
     }
     
     if (cancelEndGameBtn) {
@@ -475,9 +554,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Back navigation
-    document.getElementById('backButton').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
+    const backButton = document.getElementById('backButton');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    }
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -508,6 +590,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Just make sure validation runs after tab
                 setTimeout(validateInputs, 0);
             }
+        } else if (endGameModal.style.display === 'block' && e.key === 'Enter') {
+            // Quick confirm for end game with Enter key
+            endGame();
         }
     });
 }); 
