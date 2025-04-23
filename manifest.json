@@ -11,7 +11,7 @@
   "icons": [
     {
       "src": "/ghidim/icons/icon-192x192.png",
-      "sizes": "192x192",
+      "sizes": "200x200",
       "type": "image/png",
       "purpose": "any maskable"
     },
@@ -28,7 +28,7 @@
       "short_name": "Ván mới",
       "description": "Tạo ván bài mới",
       "url": "/ghidim/index.html?action=new",
-      "icons": [{ "src": "/ghidim/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/ghidim/icons/icon-192x192.png", "sizes": "200x200" }]
     },
     {
       "name": "Xem lịch sử",
