@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v1';
+const CACHE_NAME = 'card-game-v7';
 const urlsToCache = [
   // HTML pages
   '/',
@@ -83,7 +83,7 @@ self.addEventListener('fetch', event => {
             }).catch(() => {
                 // Nếu fetch mạng cũng thất bại, trả về fallback nếu có
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/index.html');
+                    return caches.match('/ghidim/index.html');
                 }
 
                 return new Response('Không thể tải tài nguyên.', {
