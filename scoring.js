@@ -592,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else if (endGameModal.style.display === 'block' && e.key === 'Enter') {
             // Quick confirm for end game with Enter key
-            endGame();
+            endGame().then(r => console.log("Quick confirm for end game with Enter key"));
         }
     });
 }); 

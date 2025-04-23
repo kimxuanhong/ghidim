@@ -1,29 +1,31 @@
 // Service Worker for Card Game Score Tracker
 const CACHE_NAME = 'card-game-v7';
+const BASE_PATH = '/ghidim';
 const urlsToCache = [
-  // HTML pages
-  '/',
-  '/index.html',
-  '/scoring.html',
-  
-  // CSS and JavaScript
-  '/styles.css',
-  '/script.js',
-  '/scoring.js',
-  '/firebase.js',
-  '/firebase-config.js',
-  
-  // Icons and manifest
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  
-  // Firebase libs (external resources)
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js'
+    // HTML pages
+    `${BASE_PATH}/`,
+    `${BASE_PATH}/index.html`,
+    `${BASE_PATH}/scoring.html`,
+
+    // CSS and JavaScript
+    `${BASE_PATH}/styles.css`,
+    `${BASE_PATH}/script.js`,
+    `${BASE_PATH}/scoring.js`,
+    `${BASE_PATH}/firebase.js`,
+    `${BASE_PATH}/firebase-config.js`,
+
+    // Icons and manifest
+    `${BASE_PATH}/manifest.json`,
+    `${BASE_PATH}/icons/icon-192x192.png`,
+    `${BASE_PATH}/icons/icon-512x512.png`,
+
+    // Firebase libs (external resources)
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js',
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+    'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js'
 ];
+
 
 // Cài đặt: cache các tài nguyên tĩnh và kích hoạt ngay
 self.addEventListener('install', event => {
@@ -32,12 +34,12 @@ self.addEventListener('install', event => {
     self.skipWaiting().then(r => console.log('[Service Worker] Installed'));
 
     event.waitUntil(caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('[Service Worker] Caching resources');
-                return cache.addAll(urlsToCache);
-            }).catch(err => {
-                console.error('[Service Worker] Cache add failed:', err);
-            })
+        .then(cache => {
+            console.log('[Service Worker] Caching resources');
+            return cache.addAll(urlsToCache);
+        }).catch(err => {
+            console.error('[Service Worker] Cache add failed:', err);
+        })
     );
 });
 
@@ -95,7 +97,7 @@ self.addEventListener('fetch', event => {
             .catch(() => {
                 // If offline and requesting a page, show fallback content
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/ghidim/index.html');
+                    return caches.match(`${BASE_PATH}/index.html`);
                 }
             })
     );
