@@ -95,7 +95,7 @@ self.addEventListener('fetch', event => {
             .catch(() => {
                 // If offline and requesting a page, show fallback content
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/index.html');
+                    return caches.match('/ghidim/index.html');
                 }
             })
     );
