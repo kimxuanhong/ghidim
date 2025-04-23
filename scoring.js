@@ -403,7 +403,15 @@ function selectInput(input) {
 function handleNumberClick(number) {
     if (!selectedInput) return;
     
+    // Thêm số vào cuối giá trị hiện tại
     selectedInput.value += number;
+    
+    // Đảm bảo chỉ là số hợp lệ
+    const value = selectedInput.value.trim();
+    if (value && isNaN(parseFloat(value))) {
+        selectedInput.value = '';
+    }
+    
     validateInputs();
 }
 
@@ -437,9 +445,18 @@ function handleBackspace() {
 
 // Validate score inputs
 function validateInputs() {
-    const allFilled = scoreInputs.every(input => input.value.trim() !== '');
-    confirmBtn.disabled = !allFilled;
-    return allFilled;
+    // Kiểm tra xem tất cả các trường đầu vào có chứa số hợp lệ hay không
+    const allValid = scoreInputs.every(input => {
+        const value = input.value.trim();
+        // Trường phải được điền và phải là số
+        return value !== '' && !isNaN(parseFloat(value));
+    });
+    
+    if (confirmBtn) {
+        confirmBtn.disabled = !allValid;
+    }
+    
+    return allValid;
 }
 
 // Edit an existing row
@@ -458,19 +475,44 @@ function editRow(index) {
 
 // Save the scores for the current round
 async function saveRoundScores() {
-    const scores = scoreInputs.map(input => parseInt(input.value, 10) || 0);
-    
-    if (editingRow !== null) {
-        // Update existing round
-        currentGame.rounds[editingRow] = scores;
-    } else {
-        // Add new round
-        currentGame.rounds.unshift(scores);
+    try {
+        // Đảm bảo rằng tất cả đầu vào là hợp lệ
+        if (!validateInputs()) {
+            alert("Vui lòng nhập đầy đủ điểm số cho tất cả người chơi");
+            return;
+        }
+        
+        const scores = scoreInputs.map(input => parseInt(input.value, 10) || 0);
+        
+        if (editingRow !== null) {
+            // Update existing round
+            currentGame.rounds[editingRow] = scores;
+        } else {
+            // Add new round
+            currentGame.rounds.unshift(scores);
+        }
+        
+        try {
+            await saveCurrentGame();
+        } catch (error) {
+            console.error("Lỗi khi lưu game:", error);
+            // Nếu không lưu được qua Firebase, vẫn lưu vào localStorage
+            localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
+        }
+        
+        renderScores();
+        hideModal();
+    } catch (error) {
+        console.error("Lỗi khi lưu điểm:", error);
+        alert("Có lỗi xảy ra khi lưu điểm. Hệ thống sẽ thử lưu cục bộ.");
+        
+        // Đảm bảo luôn lưu vào localStorage ngay cả khi có lỗi
+        localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(currentGame));
+        
+        // Vẫn cập nhật UI và ẩn modal
+        renderScores();
+        hideModal();
     }
-    
-    await saveCurrentGame();
-    renderScores();
-    hideModal();
 }
 
 // Set up event listeners
@@ -529,7 +571,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Score inputs focus events
     scoreInputs.forEach(input => {
         input.addEventListener('focus', () => selectInput(input));
-        input.addEventListener('input', validateInputs);
+        input.addEventListener('input', () => {
+            const value = input.value.trim();
+            if (value && isNaN(parseFloat(value))) {
+                input.value = '';
+            }
+            validateInputs();
+        });
     });
     
     // Numeric keypad buttons
@@ -563,8 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (/^\d$/.test(e.key)) {
                 // Numeric keys
                 if (selectedInput) {
-                    selectedInput.value += e.key;
-                    validateInputs();
+                    // Chỉ xử lý phím số nếu trường đầu vào đã được chọn
+                    handleNumberClick(e.key);
                 }
             } else if (e.key === '-' || e.key === '+') {
                 // Handle negative/positive toggle
@@ -573,9 +621,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     validateInputs();
                 }
             } else if (e.key === 'Backspace') {
+                // Không cần xử lý Backspace ở đây vì trình duyệt sẽ tự xử lý
+                // Chỉ cần đảm bảo chạy validateInputs sau khi xóa
                 if (selectedInput) {
-                    selectedInput.value = selectedInput.value.slice(0, -1);
-                    validateInputs();
+                    setTimeout(validateInputs, 0);
                 }
             } else if (e.key === 'Tab') {
                 // Don't add custom handling for Tab - let default browser behavior work
