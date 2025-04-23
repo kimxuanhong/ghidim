@@ -16,7 +16,7 @@ const urlsToCache = [
 
     // Icons and manifest
     `${BASE_PATH}/manifest.json`,
-    `${BASE_PATH}/icons/icon-192x192.png`,
+    `${BASE_PATH}/icons/icon-128x128.png`,
     `${BASE_PATH}/icons/icon-512x512.png`,
 
     // Firebase libs (external resources)

@@ -1,6 +1,6 @@
 To enable full PWA functionality, please create two icon files in this directory:
 
-1. icon-192x192.png (192x192 pixels)
+1. icon-128x128.png (128x128 pixels)
 2. icon-512x512.png (512x512 pixels)
 
 You can use any card game related icon or logo. These icons will be displayed on the home screen when the app is installed.
