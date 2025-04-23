@@ -82,7 +82,7 @@ self.addEventListener('fetch', event => {
                 return networkResponse;
             }).catch(() => {
                 // Nếu fetch mạng cũng thất bại, trả về fallback nếu có
-                if (event.request.headers.get('accept')?.includes('text/html')) {
+                if (event.request.mode === 'navigate') {
                     return caches.match('/index.html');
                 }
 
