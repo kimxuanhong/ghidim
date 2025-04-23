@@ -1,10 +1,13 @@
 // Register service worker for PWA support
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/ghidim/sw.js')
             .catch(err => console.error('Service Worker registration failed:', err));
     });
 }
+
+// Biến lưu trữ sự kiện cài đặt
+let deferredPrompt;
 
 // Constants
 const GAMES_STORAGE_KEY = 'cardGames';
@@ -25,6 +28,89 @@ const playerNameInputs = Array.from({ length: 4 }, (_, i) => document.getElement
 const roomInput = document.getElementById('roomInput');
 const joinRoomBtn = document.getElementById('joinRoomBtn');
 const gameRoomInput = document.getElementById('gameRoom');
+
+// Khởi tạo khi trang được tải
+document.addEventListener('DOMContentLoaded', () => {
+    // Tạo nút cài đặt để sẵn sàng
+    createInstallButton();
+    
+    // Kiểm tra nếu ứng dụng đã được cài đặt trước đó
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        window.navigator.standalone === true) {
+        console.log('Ứng dụng đang chạy ở chế độ standalone/PWA');
+        // Ẩn nút cài đặt vì app đã được cài đặt
+        const installButton = document.getElementById('installButton');
+        if (installButton) {
+            installButton.style.display = 'none';
+        }
+    }
+});
+
+// Tạo nút cài đặt ứng dụng
+function createInstallButton() {
+    // Kiểm tra nếu nút đã tồn tại
+    if (document.getElementById('installButton')) return;
+    
+    const installButton = document.createElement('button');
+    installButton.id = 'installButton';
+    installButton.className = 'install-btn';
+    installButton.innerHTML = '<span>Cài đặt ứng dụng</span>';
+    installButton.style.display = 'none';
+    
+    // Thêm nút vào đầu container
+    const container = document.querySelector('.container');
+    container.insertBefore(installButton, container.firstChild);
+    
+    // Thêm sự kiện click
+    installButton.addEventListener('click', async () => {
+        // Ẩn nút
+        installButton.style.display = 'none';
+        
+        // Hiện hộp thoại cài đặt
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            
+            // Đợi người dùng trả lời hộp thoại
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User ${outcome} the installation`);
+            
+            // Reset biến để có thể dùng lại
+            deferredPrompt = null;
+        }
+    });
+}
+
+// Xử lý sự kiện beforeinstallprompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Ngăn Chrome hiển thị hộp thoại cài đặt tự động
+    e.preventDefault();
+    
+    // Lưu sự kiện để sử dụng sau
+    deferredPrompt = e;
+    
+    // Tạo nút cài đặt nếu chưa có
+    createInstallButton();
+    
+    // Hiển thị nút cài đặt
+    const installButton = document.getElementById('installButton');
+    if (installButton) {
+        installButton.style.display = 'flex';
+    }
+});
+
+// Xử lý khi app đã được cài đặt
+window.addEventListener('appinstalled', (e) => {
+    console.log('App đã được cài đặt thành công');
+    
+    // Ẩn nút cài đặt
+    const installButton = document.getElementById('installButton');
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+    
+    // Reset biến deferredPrompt
+    deferredPrompt = null;
+});
 
 // Update room display
 function updateRoomDisplay() {
