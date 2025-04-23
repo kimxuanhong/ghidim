@@ -1,11 +1,3 @@
-// Register service worker for PWA support
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/ghidim/sw.js')
-            .catch(err => console.error('Service Worker registration failed:', err));
-    });
-}
-
 // Biến lưu trữ sự kiện cài đặt
 let deferredPrompt;
 
