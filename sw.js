@@ -64,33 +64,39 @@ self.addEventListener('activate', event => {
 // Intercept fetch: ưu tiên mạng, fallback về cache nếu lỗi
 self.addEventListener('fetch', event => {
     event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-            if (cachedResponse) {
-                // Nếu tìm thấy trong cache, trả về luôn
-                return cachedResponse;
-            }
-
-            // Nếu không có trong cache, fetch từ mạng và cache lại
-            return fetch(event.request).then(networkResponse => {
-                // Chỉ cache nếu response hợp lệ
-                if (networkResponse && networkResponse.status === 200) {
-                    const responseClone = networkResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseClone);
-                    });
-                }
-                return networkResponse;
-            }).catch(() => {
-                // Nếu fetch mạng cũng thất bại, trả về fallback nếu có
-                if (event.request.mode === 'navigate') {
-                    return caches.match('/ghidim/index.html');
+        caches.match(event.request)
+            .then(response => {
+                // Cache hit - return the response
+                if (response) {
+                    return response;
                 }
 
-                return new Response('Không thể tải tài nguyên.', {
-                    status: 504,
-                    statusText: 'Gateway Timeout'
+                // Clone the request
+                const fetchRequest = event.request.clone();
+
+                return fetch(fetchRequest).then(response => {
+                    // Check if valid response
+                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                        return response;
+                    }
+
+                    // Clone the response
+                    const responseToCache = response.clone();
+
+                    // Open cache and store the response
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
+
+                    return response;
                 });
-            });
-        })
+            })
+            .catch(() => {
+                // If offline and requesting a page, show fallback content
+                if (event.request.mode === 'navigate') {
+                    return caches.match('/index.html');
+                }
+            })
     );
 });
