@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v9';
+const CACHE_NAME = 'card-game-v10';
 const BASE_PATH = '/ghidim';
 const urlsToCache = [
     // HTML pages
@@ -73,59 +73,38 @@ self.addEventListener('fetch', event => {
     
     event.respondWith(
         caches.match(event.request)
-            .then(cachedResponse => {
-                if (cachedResponse) {
-                    // Nếu tìm thấy trong cache, trả về và đồng thời cập nhật cache ngầm
-                    const fetchPromise = fetch(event.request)
-                        .then(response => {
-                            // Cập nhật cache nếu đó là yêu cầu hợp lệ
-                            if (response && response.status === 200 && response.type === 'basic') {
-                                const responseToCache = response.clone();
-                                caches.open(CACHE_NAME)
-                                    .then(cache => {
-                                        cache.put(event.request, responseToCache);
-                                    });
-                            }
-                            return response;
-                        })
-                        .catch(err => {
-                            console.log('[Service Worker] Fetch failed; returning cached response instead.', err);
-                        });
-
-                    // Trả về phản hồi từ cache ngay lập tức
-                    return cachedResponse;
+            .then(response => {
+                // Cache hit - return the response
+                if (response) {
+                    return response;
                 }
 
-                // Nếu không có trong cache, fetch từ mạng
-                return fetch(event.request)
-                    .then(response => {
-                        // Nếu không phải là yêu cầu hợp lệ, trả về response ngay
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
-                        }
+                // Clone the request
+                const fetchRequest = event.request.clone();
 
-                        // Clone response để cache
-                        const responseToCache = response.clone();
-
-                        // Thêm vào cache
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                cache.put(event.request, responseToCache);
-                            });
-
+                return fetch(fetchRequest).then(response => {
+                    // Check if valid response
+                    if (!response || response.status !== 200 || response.type !== 'basic') {
                         return response;
-                    })
-                    .catch(error => {
-                        console.error('[Service Worker] Fetch failed:', error);
-                        
-                        // Nếu là yêu cầu đến trang HTML, trả về trang offline
-                        if (event.request.mode === 'navigate') {
-                            return caches.match(`${BASE_PATH}/index.html`);
-                        }
-                        
-                        // Thử tìm một cache phù hợp cho tài nguyên tương tự
-                        return caches.match(new Request(event.request.url));
-                    });
+                    }
+
+                    // Clone the response
+                    const responseToCache = response.clone();
+
+                    // Open cache and store the response
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
+
+                    return response;
+                });
+            })
+            .catch(() => {
+                // If offline and requesting a page, show fallback content
+                if (event.request.mode === 'navigate') {
+                    return caches.match(`${BASE_PATH}/index.html`);
+                }
             })
     );
 });
