@@ -13,7 +13,24 @@ let deferredPrompt;
 document.addEventListener('DOMContentLoaded', () => {
     // Kiểm tra và tạo nút cài đặt
     setupInstallButton();
+    
+    // Kiểm tra nếu đã có cài đặt trước đó trên iOS
+    checkIOSInstallation();
 });
+
+// Kiểm tra trạng thái cài đặt trên iOS
+function checkIOSInstallation() {
+    // Nếu đang chạy ở chế độ standalone hoặc đã đánh dấu cài đặt
+    if (navigator.standalone === true || localStorage.getItem('pwaInstalled') === 'true') {
+        console.log('Ứng dụng đã được cài đặt trên iOS');
+        hideInstallButton();
+    }
+    // Nếu đang chạy trên thiết bị iOS nhưng chưa cài đặt
+    else if (isIOS() && !localStorage.getItem('pwaInstalled')) {
+        console.log('Thiết bị iOS nhưng chưa cài đặt PWA');
+        showIOSInstallButton();
+    }
+}
 
 // Thiết lập nút cài đặt ứng dụng
 function setupInstallButton() {
@@ -102,43 +119,7 @@ function showIOSInstallButton() {
     }
 }
 
-// Hiển thị hướng dẫn cài đặt cho iOS
-function showIOSInstallInstructions() {
-    // Tạo modal hướng dẫn
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.id = 'iosInstallModal';
-    modal.style.display = 'block';
-    
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h2>Cài đặt trên iOS</h2>
-            <div class="modal-message">
-                <p>Để cài đặt ứng dụng lên màn hình chính, hãy làm theo các bước:</p>
-                <ol style="text-align: left;">
-                    <li>Nhấn vào biểu tượng Chia sẻ <span style="background: #eee; padding: 2px 5px; border-radius: 4px;">&#x2BAD;</span> ở dưới cùng Safari</li>
-                    <li>Kéo xuống và chọn <strong>Thêm vào màn hình chính</strong></li>
-                    <li>Nhấn <strong>Thêm</strong> ở góc trên bên phải</li>
-                </ol>
-            </div>
-            <div class="modal-buttons">
-                <button id="closeIOSGuide" class="secondary-btn">Đóng</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Thêm sự kiện đóng modal
-    document.getElementById('closeIOSGuide').addEventListener('click', () => {
-        modal.style.display = 'none';
-        setTimeout(() => {
-            modal.remove();
-        }, 300);
-    });
-}
-
-// Kiểm tra xem ứng dụng đã được cài đặt chưa
+// Kiểm tra nếu ứng dụng đã được cài đặt trước đó
 function isPWAInstalled() {
     // Kiểm tra xem app đang chạy ở chế độ standalone (đã cài đặt)
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -147,6 +128,11 @@ function isPWAInstalled() {
     
     // Kiểm tra đặc biệt cho iOS
     if (navigator.standalone === true) {
+        return true;
+    }
+    
+    // Kiểm tra localStorage xem app đã được cài đặt trên iOS chưa
+    if (localStorage.getItem('pwaInstalled') === 'true') {
         return true;
     }
     
@@ -785,4 +771,54 @@ document.addEventListener('DOMContentLoaded', () => {
             endGame().then(r => console.log("Quick confirm for end game with Enter key"));
         }
     });
-}); 
+});
+
+// Hiển thị hướng dẫn cài đặt cho iOS
+function showIOSInstallInstructions() {
+    // Tạo modal hướng dẫn
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'iosInstallModal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>Cài đặt trên iOS</h2>
+            <div class="modal-message">
+                <p>Để cài đặt ứng dụng lên màn hình chính, hãy làm theo các bước:</p>
+                <ol style="text-align: left;">
+                    <li>Nhấn vào biểu tượng Chia sẻ <span style="background: #eee; padding: 2px 5px; border-radius: 4px;">&#x2BAD;</span> ở dưới cùng Safari</li>
+                    <li>Kéo xuống và chọn <strong>Thêm vào màn hình chính</strong></li>
+                    <li>Nhấn <strong>Thêm</strong> ở góc trên bên phải</li>
+                </ol>
+            </div>
+            <div class="modal-buttons">
+                <button id="closeIOSGuide" class="secondary-btn">Đóng</button>
+                <button id="confirmIOSInstall" class="confirm-btn">Đã cài đặt xong</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Thêm sự kiện đóng modal
+    document.getElementById('closeIOSGuide').addEventListener('click', () => {
+        modal.style.display = 'none';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    });
+    
+    // Thêm sự kiện khi người dùng xác nhận đã cài đặt xong
+    document.getElementById('confirmIOSInstall').addEventListener('click', () => {
+        // Đánh dấu đã cài đặt trong localStorage
+        localStorage.setItem('pwaInstalled', 'true');
+        // Ẩn nút cài đặt
+        hideInstallButton();
+        // Đóng modal
+        modal.style.display = 'none';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    });
+} 
