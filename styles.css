@@ -449,6 +449,7 @@ button:disabled {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     font-size: 1rem;
     min-width: 180px;
+    border-radius: 50px;
 }
 
 /* Room selection styles */
