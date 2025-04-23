@@ -12,6 +12,8 @@ const urlsToCache = [
     `${BASE_PATH}/script.js`,
     `${BASE_PATH}/scoring.js`,
     `${BASE_PATH}/firebase.js`,
+    `${BASE_PATH}/install.js`,
+    `${BASE_PATH}/sw-register.js`,
     `${BASE_PATH}/firebase-config.js`,
 
     // Icons and manifest
