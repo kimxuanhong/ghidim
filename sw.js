@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v3';
+const CACHE_NAME = 'card-game-v1';
 const urlsToCache = [
   // HTML pages
   '/',
@@ -25,105 +25,72 @@ const urlsToCache = [
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js'
 ];
 
-// Force update service worker immediately
+// Cài đặt: cache các tài nguyên tĩnh và kích hoạt ngay
 self.addEventListener('install', event => {
-  // Force service worker to activate immediately
-  self.skipWaiting();
-  
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Caching app resources');
-        return cache.addAll(urlsToCache);
-      })
-      .catch(error => {
-        console.error('Service Worker: Cache failed', error);
-      })
-  );
-});
+    console.log('[Service Worker] Install');
+    // Kích hoạt ngay thay vì chờ đến khi không còn client cũ
+    self.skipWaiting().then(r => console.log('[Service Worker] Installed'));
 
-// Activate event - clean up old caches and take control
-self.addEventListener('activate', event => {
-  // Take control of all clients immediately
-  event.waitUntil(
-    Promise.all([
-      // Take control of uncontrolled clients
-      self.clients.claim(),
-      
-      // Remove old caches
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-    ])
-  );
-});
-
-// Network first, falling back to cache strategy for most requests
-self.addEventListener('fetch', event => {
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin) && 
-      !event.request.url.includes('gstatic.com')) {
-    return;
-  }
-  
-  // For navigation requests (HTML pages), use cache first then network
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request)
-            .then(fetchResponse => {
-              return caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, fetchResponse.clone());
-                  return fetchResponse;
-                });
+    event.waitUntil(caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('[Service Worker] Caching resources');
+                return cache.addAll(urlsToCache);
+            }).catch(err => {
+                console.error('[Service Worker] Cache add failed:', err);
             })
-            .catch(() => {
-              // If both cache and network fail, return the offline page
-              return caches.match('/index.html');
+    );
+});
+
+// Kích hoạt: xóa các cache cũ và chiếm quyền điều khiển
+self.addEventListener('activate', event => {
+    console.log('[Service Worker] Activate');
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        if (cacheName !== CACHE_NAME) {
+                            console.log('[Service Worker] Deleting old cache:', cacheName);
+                            return caches.delete(cacheName);
+                        }
+                    })
+                );
+            })
+        ])
+    );
+});
+
+// Intercept fetch: ưu tiên mạng, fallback về cache nếu lỗi
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request).then(cachedResponse => {
+            if (cachedResponse) {
+                // Nếu tìm thấy trong cache, trả về luôn
+                return cachedResponse;
+            }
+
+            // Nếu không có trong cache, fetch từ mạng và cache lại
+            return fetch(event.request).then(networkResponse => {
+                // Chỉ cache nếu response hợp lệ
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return networkResponse;
+            }).catch(() => {
+                // Nếu fetch mạng cũng thất bại, trả về fallback nếu có
+                if (event.request.headers.get('accept')?.includes('text/html')) {
+                    return caches.match('/index.html');
+                }
+
+                return new Response('Không thể tải tài nguyên.', {
+                    status: 504,
+                    statusText: 'Gateway Timeout'
+                });
             });
         })
     );
-    return;
-  }
-  
-  // For other requests, try network first, then cache
-  event.respondWith(
-    fetch(event.request.clone())
-      .then(response => {
-        // Cache successful responses
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-        }
-        return response;
-      })
-      .catch(() => {
-        // If network fails, try the cache
-        return caches.match(event.request)
-          .then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            
-            // If the request is for an HTML page, return the offline page
-            if (event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('/index.html');
-            }
-            
-            // Otherwise just return a 404-like response
-            return new Response('Not found', { status: 404, statusText: 'Not found' });
-          });
-      })
-  );
-}); 
+});
