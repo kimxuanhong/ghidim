@@ -1,6 +1,3 @@
-# Firebase configuration - contains sensitive API keys
-firebase-config.js
-
 # Node.js dependencies
 node_modules/
 npm-debug.log

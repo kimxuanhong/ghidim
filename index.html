@@ -18,9 +18,6 @@
     <!-- Firebase Configuration (this file should NOT be committed to version control) -->
     <script src="firebase-config.js"></script>
     <script src="firebase.js"></script>
-    
-    <!-- Firebase Config Checker -->
-    <script src="check-firebase-config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -41,10 +38,6 @@
                 <!-- Games will be listed here -->
             </div>
         </div>
-
-
-        <!-- Nút tạo ván mới -->
-        <button id="newGameBtn" class="primary-btn">Tạo Ván Mới</button>
 
         <!-- Modal nhập tên người chơi -->
         <div id="playerNamesModal" class="modal">
@@ -96,6 +89,10 @@
             </div>
         </div>
     </div>
+    
+    <!-- Nút tạo ván mới - đặt bên ngoài container để cố định ở dưới cùng -->
+    <button id="newGameBtn" class="primary-btn">Tạo Ván Mới</button>
+    
     <script src="script.js"></script>
 </body>
 </html> 

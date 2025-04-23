@@ -2,8 +2,10 @@
   "name": "Ghi Điểm Ván Bài",
   "short_name": "Ghi Điểm",
   "description": "Ứng dụng ghi điểm cho các ván bài",
-  "start_url": "index.html",
+  "start_url": "/ghidim/index.html",
+  "scope": "/ghidim/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "icons": [
@@ -19,5 +21,21 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tạo ván mới",
+      "short_name": "Ván mới",
+      "description": "Tạo ván bài mới",
+      "url": "/ghidim/index.html?action=new",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Xem lịch sử",
+      "short_name": "Lịch sử",
+      "description": "Xem lịch sử ván bài",
+      "url": "/ghidim/index.html?action=history",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+    }
   ]
-} 
+}

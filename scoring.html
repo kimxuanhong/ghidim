@@ -29,8 +29,8 @@
             pointer-events: none;
             z-index: 1000;
             overflow: hidden;
-            display: none;
         }
+        
         .confetti {
             position: absolute;
             width: 10px;
@@ -38,29 +38,87 @@
             background-color: #f00;
             animation: fall 5s linear forwards;
         }
+        
         .winner-highlight {
             animation: pulse 1.5s infinite;
             font-weight: bold;
             background-color: rgba(255, 215, 0, 0.3);
         }
+        
+        .winner-message {
+            background-color: #FFD700;
+            color: #000;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: bounce 1s ease infinite;
+            z-index: 1001;
+            position: relative;
+        }
+        
+        #gameStatus {
+            text-align: center;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 10px 0;
+            padding: 8px;
+            font-size: 1.2em;
+            border-radius: 4px;
+            background-color: rgba(231, 76, 60, 0.1);
+            display: none;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
         @keyframes fall {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+            0% { 
+                transform: translateY(-100px) rotate(0deg); 
+                opacity: 1;
+            }
+            80% {
+                opacity: 0.8;
+            }
+            100% { 
+                transform: translateY(100vh) rotate(720deg); 
+                opacity: 0;
+            }
+        }
+        
+        .game-ended tbody tr {
+            opacity: 0.8;
+            cursor: default !important;
+        }
+        
+        .winner {
+            background-color: #FFD700 !important;
+            color: #000 !important;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="content">
         <div class="confetti-container" id="confettiContainer"></div>
         <div class="header">
             <h1>Ghi Điểm Ván Bài</h1>
-            <a href="index.html" class="back-btn">← Trở về</a>
+            <a href="index.html" class="back-btn" id="backButton">← Trở về</a>
         </div>
+
+        <div id="gameStatus"></div>
 
         <div class="score-section">
             <div class="table-header">
@@ -81,8 +139,8 @@
                     <tbody id="scoreTableBody">
                     </tbody>
                     <tfoot>
-                        <tr>
-                            <td>Tổng điểm</td>
+                        <tr id="totalScores">
+                            <td>Tổng</td>
                             <td id="total1">0</td>
                             <td id="total2">0</td>
                             <td id="total3">0</td>
@@ -151,7 +209,6 @@
             </div>
         </div>
     </div>
-    <script src="firebase.js"></script>
     <script src="scoring.js"></script>
 </body>
 </html> 

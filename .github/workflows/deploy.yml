@@ -17,10 +17,14 @@ jobs:
           echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-config.js
           echo "Firebase config created."
 
+      - name: Debug Firebase Config
+        run: |
+          cat firebase-config.js
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .             # Gốc project chứa index.html
-          branch: master      # Nhánh để deploy
+          branch: gh-pages3      # Nhánh để deploy
           clean: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PERSONAL_TOKEN }}
