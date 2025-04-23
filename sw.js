@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v8';
+const CACHE_NAME = 'card-game-v9';
 const BASE_PATH = '/ghidim';
 const urlsToCache = [
     // HTML pages
@@ -13,7 +13,6 @@ const urlsToCache = [
     `${BASE_PATH}/scoring.js`,
     `${BASE_PATH}/firebase.js`,
     `${BASE_PATH}/install.js`,
-    `${BASE_PATH}/sw-register.js`,
     `${BASE_PATH}/firebase-config.js`,
 
     // Icons and manifest
