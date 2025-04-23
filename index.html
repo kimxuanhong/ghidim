@@ -12,14 +12,17 @@
     <link rel="apple-touch-icon" href="icons/icon-128x128.png">
     <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
     <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+    
+    <!-- Service Worker Registration - Early -->
     <script>
-        <!-- Service Worker Registration  -->
+        // Đăng ký service worker ngay khi tài liệu HTML được phân tích
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/ghidim/sw.js')
                 .then(reg => console.log('Service Worker registered with scope:', reg.scope))
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
     </script>
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -30,7 +33,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>Lịch Sử Ván Bài</h1>
+        <div class="header">
+            <h1>Lịch Sử Ván Bài</h1>
+        </div>
         
         <!-- Room selection -->
         <div class="room-selector">

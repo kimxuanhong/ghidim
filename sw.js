@@ -34,13 +34,11 @@ self.addEventListener('install', event => {
     // Kích hoạt ngay thay vì chờ đến khi không còn client cũ
     self.skipWaiting().then(r => console.log('[Service Worker] Installed'));
 
-    event.waitUntil(
-        caches.open(CACHE_NAME)
+    event.waitUntil(caches.open(CACHE_NAME)
         .then(cache => {
             console.log('[Service Worker] Caching resources');
             return cache.addAll(urlsToCache);
-        })
-        .catch(err => {
+        }).catch(err => {
             console.error('[Service Worker] Cache add failed:', err);
         })
     );
