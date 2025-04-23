@@ -7,9 +7,21 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+    
+    <!-- Service Worker Registration - Early -->
+    <script>
+        // Đăng ký service worker ngay khi tài liệu HTML được phân tích
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/ghidim/sw.js')
+                .then(reg => console.log('Service Worker registered with scope:', reg.scope))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -151,10 +163,8 @@
             </div>
         </div>
 
-        <div class="fixed-action-buttons">
-            <button id="addScoreBtn" class="primary-btn">Thêm điểm mới</button>
-        </div>
-
+        <button id="addScoreBtn" class="primary-btn">Thêm điểm mới</button>
+        
         <!-- Modal form để nhập điểm -->
         <div id="scoreModal" class="modal">
             <div class="modal-content">
@@ -209,6 +219,7 @@
             </div>
         </div>
     </div>
+    <script src="install.js"></script>
     <script src="scoring.js"></script>
 </body>
 </html> 

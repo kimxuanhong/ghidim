@@ -432,23 +432,23 @@ button:disabled {
     }
 }
 
-/* Fixed Action Button */
-.fixed-action-buttons {
+#addScoreBtn {
     position: fixed;
     bottom: 20px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    min-width: 160px;
+    max-width: 200px;
+    margin: 0 auto;
     z-index: 100;
-    padding: 10px;
-}
-
-.fixed-action-buttons button {
-    padding: 12px 24px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    font-size: 1rem;
-    min-width: 180px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    text-align: center;
+    background-color: #1a73e8;
 }
 
 /* Room selection styles */
@@ -613,4 +613,38 @@ button:disabled {
     0% { opacity: 1; }
     50% { opacity: 0.8; }
     100% { opacity: 1; }
+}
+
+/* Nút cài đặt ứng dụng */
+#installButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem auto;
+    padding: 0.8rem 1.5rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#installButton::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'%3E%3C/path%3E%3Cpolyline points='7 10 12 15 17 10'%3E%3C/polyline%3E%3Cline x1='12' y1='15' x2='12' y2='3'%3E%3C/line%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+#installButton:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }

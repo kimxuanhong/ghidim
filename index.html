@@ -7,9 +7,21 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+    
+    <!-- Service Worker Registration - Early -->
+    <script>
+        // Đăng ký service worker ngay khi tài liệu HTML được phân tích
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/ghidim/sw.js')
+                .then(reg => console.log('Service Worker registered with scope:', reg.scope))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -21,7 +33,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>Lịch Sử Ván Bài</h1>
+        <div class="header">
+            <h1>Lịch Sử Ván Bài</h1>
+        </div>
         
         <!-- Room selection -->
         <div class="room-selector">
@@ -71,28 +85,12 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Firebase Configuration Error Modal -->
-        <div id="configErrorModal" class="modal">
-            <div class="modal-content">
-                <h2>Lỗi Cấu Hình Firebase</h2>
-                <p>Ứng dụng không thể kết nối với Firebase. Có thể do các lý do sau:</p>
-                <ol>
-                    <li>File <code>firebase-config.js</code> không tồn tại hoặc không đúng định dạng</li>
-                    <li>Thông tin cấu hình Firebase không chính xác</li>
-                    <li>Kết nối mạng bị gián đoạn</li>
-                </ol>
-                <p>Vui lòng kiểm tra console để biết thêm chi tiết.</p>
-                <div class="modal-buttons">
-                    <button onclick="document.getElementById('configErrorModal').style.display='none';" class="primary-btn">Đã hiểu</button>
-                </div>
-            </div>
-        </div>
     </div>
     
     <!-- Nút tạo ván mới - đặt bên ngoài container để cố định ở dưới cùng -->
     <button id="newGameBtn" class="primary-btn">Tạo Ván Mới</button>
-    
+
+    <script src="install.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 

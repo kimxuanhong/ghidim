@@ -1,5 +1,5 @@
 // Service Worker for Card Game Score Tracker
-const CACHE_NAME = 'card-game-v7';
+const CACHE_NAME = 'card-game-v10';
 const BASE_PATH = '/ghidim';
 const urlsToCache = [
     // HTML pages
@@ -12,11 +12,12 @@ const urlsToCache = [
     `${BASE_PATH}/script.js`,
     `${BASE_PATH}/scoring.js`,
     `${BASE_PATH}/firebase.js`,
+    `${BASE_PATH}/install.js`,
     `${BASE_PATH}/firebase-config.js`,
 
     // Icons and manifest
     `${BASE_PATH}/manifest.json`,
-    `${BASE_PATH}/icons/icon-192x192.png`,
+    `${BASE_PATH}/icons/icon-128x128.png`,
     `${BASE_PATH}/icons/icon-512x512.png`,
 
     // Firebase libs (external resources)
@@ -48,7 +49,9 @@ self.addEventListener('activate', event => {
     console.log('[Service Worker] Activate');
     event.waitUntil(
         Promise.all([
+            // Chiếm quyền điều khiển ngay lập tức
             self.clients.claim(),
+            // Xóa các cache cũ
             caches.keys().then(cacheNames => {
                 return Promise.all(
                     cacheNames.map(cacheName => {
@@ -63,8 +66,11 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Intercept fetch: ưu tiên mạng, fallback về cache nếu lỗi
+// Thay đổi chiến lược: Cache First, fallback to Network
 self.addEventListener('fetch', event => {
+    // Bỏ qua các yêu cầu không phải HTTP/HTTPS
+    if (!event.request.url.startsWith('http')) return;
+    
     event.respondWith(
         caches.match(event.request)
             .then(response => {

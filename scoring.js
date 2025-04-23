@@ -1,11 +1,3 @@
-// Register service worker for PWA support
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .catch(err => console.error('Service Worker registration failed:', err));
-    });
-}
-
 // Constants
 const GAMES_STORAGE_KEY = 'cardGames';
 const CURRENT_GAME_KEY = 'currentGame';
@@ -595,4 +587,4 @@ document.addEventListener('DOMContentLoaded', () => {
             endGame().then(r => console.log("Quick confirm for end game with Enter key"));
         }
     });
-}); 
+});

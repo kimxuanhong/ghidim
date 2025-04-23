@@ -8,18 +8,37 @@
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
+  "id": "/ghidim/",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
   "icons": [
     {
-      "src": "icons/icon-192x192.png",
-      "sizes": "192x192",
+      "src": "/ghidim/icons/icon-128x128.png",
+      "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512x512.png",
+      "src": "/ghidim/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/ghidim/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/ghidim/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ],
   "shortcuts": [
@@ -28,14 +47,14 @@
       "short_name": "Ván mới",
       "description": "Tạo ván bài mới",
       "url": "/ghidim/index.html?action=new",
-      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/ghidim/icons/icon-128x128.png", "sizes": "128x128" }]
     },
     {
       "name": "Xem lịch sử",
       "short_name": "Lịch sử",
       "description": "Xem lịch sử ván bài",
       "url": "/ghidim/index.html?action=history",
-      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/ghidim/icons/icon-128x128.png", "sizes": "128x128" }]
     }
   ]
 }
